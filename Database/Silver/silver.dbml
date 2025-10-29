@@ -1,0 +1,361 @@
+// ========================================
+// SILVER LAYER - CLEANSED & HARMONIZED
+// ShopFast Real-Time Inventory Sync
+// ========================================
+
+Project ShopFast_Silver {
+  database_type: 'Delta Lake'
+  Note: 'Silver layer - Validated, deduplicated, harmonized data'
+}
+
+// ========================================
+// SILVER: UNIFIED ORDERS
+// ========================================
+
+Table silver_orders {
+  order_id varchar(50) [pk]
+  order_source varchar(20) [note: 'web, mobile_app']
+  customer_id varchar(50)
+  order_date timestamp
+  order_status varchar(20)
+  total_amount decimal(10,2)
+  payment_method varchar(30)
+  payment_transaction_id varchar(100)
+  payment_status varchar(20)
+  shipping_address_line1 varchar(255)
+  shipping_city varchar(100)
+  shipping_state varchar(50)
+  shipping_zip varchar(20)
+  shipping_method varchar(50)
+  tracking_number varchar(100)
+  promo_code varchar(50)
+  created_at timestamp
+  updated_at timestamp
+  
+  // Silver metadata
+  _valid_from timestamp [note: 'Start of validity period']
+  _valid_to timestamp [note: 'End of validity (null = current)']
+  _is_current boolean [note: 'Current version flag']
+  _data_quality_score decimal(3,2) [note: '0.00 to 1.00']
+  _duplicate_flag boolean
+  _late_arrival_flag boolean
+  _reconciliation_status varchar(20) [note: 'matched, unmatched, conflicted']
+  
+  Note: 'Silver: Unified orders from web and mobile app'
+  
+  indexes {
+    (customer_id, order_date) [name: 'idx_silver_orders_cust_date']
+    (_is_current) [name: 'idx_silver_orders_current']
+  }
+}
+
+Table silver_order_items {
+  order_item_id varchar(50) [pk]
+  order_id varchar(50) [ref: > silver_orders.order_id]
+  sku varchar(50)
+  product_name varchar(255)
+  quantity int
+  unit_price decimal(10,2)
+  discount_applied decimal(10,2)
+  size varchar(20)
+  color varchar(50)
+  fulfillment_status varchar(20)
+  warehouse_allocated varchar(50)
+  created_at timestamp
+  
+  // Silver metadata
+  _valid_from timestamp
+  _valid_to timestamp
+  _is_current boolean
+  _data_quality_score decimal(3,2)
+  
+  Note: 'Silver: Unified order line items'
+  
+  indexes {
+    (sku, created_at) [name: 'idx_silver_order_items_sku_date']
+  }
+}
+
+// ========================================
+// SILVER: UNIFIED INVENTORY
+// ========================================
+
+Table silver_inventory_unified {
+  inventory_snapshot_id varchar(100) [pk]
+  sku varchar(50)
+  location_type varchar(20) [note: 'warehouse, store, online']
+  location_id varchar(50) [note: 'WH-EAST-01, STORE-NYC-01, etc']
+  location_name varchar(255)
+  
+  // Harmonized quantity fields
+  physical_quantity int [note: 'Actual on-hand quantity']
+  reserved_quantity int [note: 'Allocated/committed quantity']
+  available_quantity int [note: 'physical - reserved']
+  damaged_quantity int [note: 'Not available for sale']
+  in_transit_quantity int [note: 'Expected from supplier']
+  
+  // Metadata about the inventory
+  last_count_timestamp timestamp
+  storage_location varchar(100) [note: 'Aisle/zone/bin location']
+  batch_lot_number varchar(50)
+  cost_per_unit decimal(10,2)
+  snapshot_timestamp timestamp [note: 'When this snapshot was taken']
+  
+  // Silver metadata
+  _valid_from timestamp
+  _valid_to timestamp
+  _is_current boolean
+  _data_quality_score decimal(3,2)
+  _source_system varchar(50)
+  _reconciled_at timestamp
+  _discrepancy_flag boolean [note: 'Mismatch detected between sources']
+  _negative_inventory_flag boolean [note: 'Data quality issue']
+  
+  Note: 'Silver: Unified inventory across all locations'
+  
+  indexes {
+    (sku, location_id, _is_current) [name: 'idx_silver_inv_sku_loc_curr']
+    (_discrepancy_flag) [name: 'idx_silver_inv_discrepancy']
+    (_negative_inventory_flag) [name: 'idx_silver_inv_neg']
+  }
+}
+
+Table silver_inventory_discrepancies {
+  discrepancy_id varchar(100) [pk]
+  sku varchar(50)
+  location_id varchar(50)
+  discrepancy_type varchar(50) [note: 'negative_qty, reserved_exceeds_physical, cross_location_mismatch']
+  detected_at timestamp
+  
+  // Discrepancy details
+  expected_value decimal(10,2)
+  actual_value decimal(10,2)
+  variance decimal(10,2)
+  variance_percentage decimal(5,2)
+  
+  // Source comparison
+  source_system_1 varchar(50)
+  source_value_1 decimal(10,2)
+  source_timestamp_1 timestamp
+  source_system_2 varchar(50)
+  source_value_2 decimal(10,2)
+  source_timestamp_2 timestamp
+  
+  // Resolution
+  resolution_status varchar(20) [note: 'open, investigating, resolved']
+  resolution_notes text
+  resolved_at timestamp
+  resolved_by varchar(100)
+  
+  Note: 'Silver: Track inventory discrepancies for investigation'
+}
+
+// ========================================
+// SILVER: PRODUCT MASTER DATA
+// ========================================
+
+Table silver_products {
+  product_id int [pk]
+  sku varchar(50) [unique]
+  product_name varchar(255)
+  category varchar(100)
+  subcategory varchar(100)
+  
+  // Pricing (for SCD tracking)
+  current_price decimal(10,2)
+  current_cost decimal(10,2)
+  
+  // Supply chain attributes
+  supplier_id varchar(50)
+  supplier_name varchar(255)
+  reorder_point int
+  reorder_quantity int
+  lead_time_days int
+  
+  // Product status
+  is_active boolean
+  is_seasonal boolean
+  is_perishable boolean
+  
+  // Metadata
+  created_at timestamp
+  last_updated_at timestamp
+  
+  // Silver metadata
+  _valid_from timestamp
+  _valid_to timestamp
+  _is_current boolean
+  _data_quality_score decimal(3,2)
+  _master_data_source varchar(50) [note: 'Primary source of truth']
+  
+  Note: 'Silver: Master product catalog - harmonized'
+  
+  indexes {
+    (category, subcategory) [name: 'idx_silver_products_category']
+    (supplier_id) [name: 'idx_silver_products_supplier']
+  }
+}
+
+// ========================================
+// SILVER: TRANSACTION STREAMS
+// ========================================
+
+Table silver_transactions {
+  transaction_id varchar(100) [pk]
+  transaction_source varchar(20) [note: 'web_order, app_order, pos_sale']
+  transaction_type varchar(20) [note: 'sale, return, adjustment']
+  location_type varchar(20) [note: 'online, store']
+  location_id varchar(50)
+  
+  transaction_timestamp timestamp
+  customer_id varchar(50)
+  cashier_id varchar(50)
+  register_id varchar(50)
+  
+  // Payment details
+  payment_method varchar(30)
+  payment_amount decimal(10,2)
+  payment_status varchar(20)
+  
+  // Silver metadata
+  _valid_from timestamp
+  _is_current boolean
+  _data_quality_score decimal(3,2)
+  _processed_at timestamp
+  
+  Note: 'Silver: Unified transactions across all channels'
+  
+  indexes {
+    (transaction_timestamp) [name: 'idx_silver_trans_timestamp']
+    (customer_id) [name: 'idx_silver_trans_customer']
+  }
+}
+
+Table silver_transaction_items {
+  transaction_item_id varchar(100) [pk]
+  transaction_id varchar(100) [ref: > silver_transactions.transaction_id]
+  sku varchar(50)
+  product_name varchar(255)
+  quantity int [note: 'Positive for sales, negative for returns']
+  unit_price decimal(10,2)
+  discount_amount decimal(10,2)
+  net_amount decimal(10,2)
+  
+  // Inventory impact
+  inventory_location varchar(50)
+  inventory_impact int [note: 'Change in inventory quantity']
+  
+  // Silver metadata
+  _valid_from timestamp
+  _is_current boolean
+  _data_quality_score decimal(3,2)
+  
+  Note: 'Silver: Transaction line items with inventory impact'
+  
+  indexes {
+    (sku, transaction_id) [name: 'idx_silver_trans_items_sku']
+  }
+}
+
+// ========================================
+// SILVER: INVENTORY MOVEMENTS
+// ========================================
+
+Table silver_inventory_movements {
+  movement_id varchar(100) [pk]
+  movement_type varchar(50) [note: 'sale, return, transfer, adjustment, damage, receiving']
+  sku varchar(50)
+  
+  // Location details
+  from_location_type varchar(20)
+  from_location_id varchar(50)
+  to_location_type varchar(20)
+  to_location_id varchar(50)
+  
+  // Quantity and timing
+  quantity int
+  movement_timestamp timestamp
+  
+  // Reference to triggering event
+  reference_type varchar(50) [note: 'order, transaction, transfer_order, adjustment']
+  reference_id varchar(100)
+  
+  // Reason and notes
+  reason varchar(100)
+  notes text
+  performed_by varchar(100)
+  
+  // Silver metadata
+  _valid_from timestamp
+  _is_current boolean
+  _data_quality_score decimal(3,2)
+  _late_arrival_flag boolean
+  _processed_at timestamp
+  
+  Note: 'Silver: All inventory movements for audit trail'
+  
+  indexes {
+    (sku, movement_timestamp) [name: 'idx_silver_movements_sku_ts']
+    (from_location_id) [name: 'idx_silver_movements_from_loc']
+    (to_location_id) [name: 'idx_silver_movements_to_loc']
+  }
+}
+
+// ========================================
+// SILVER: DATA QUALITY METRICS
+// ========================================
+
+Table silver_data_quality_checks {
+  check_id varchar(100) [pk]
+  check_timestamp timestamp
+  source_system varchar(50)
+  table_name varchar(100)
+  check_type varchar(50) [note: 'completeness, accuracy, consistency, timeliness']
+  check_name varchar(100)
+  
+  // Check results
+  records_checked bigint
+  records_passed bigint
+  records_failed bigint
+  pass_rate decimal(5,2)
+  
+  // Threshold
+  threshold_value decimal(5,2)
+  threshold_status varchar(20) [note: 'pass, warning, fail']
+  
+  // Failed records sample
+  failed_records_sample text [note: 'JSON array of failed record IDs']
+  
+  Note: 'Silver: Data quality check results - Great Expectations'
+  
+  indexes {
+    (check_timestamp, source_system) [name: 'idx_silver_dq_ts_source']
+  }
+}
+
+Table silver_late_arriving_data {
+  late_arrival_id varchar(100) [pk]
+  source_system varchar(50)
+  source_table varchar(100)
+  record_id varchar(100)
+  
+  // Timing details
+  event_timestamp timestamp [note: 'When event actually occurred']
+  arrival_timestamp timestamp [note: 'When we received it']
+  latency_hours decimal(10,2)
+  
+  // Impact assessment
+  affected_tables text [note: 'Comma-separated list of downstream tables']
+  requires_reprocessing boolean
+  reprocessing_status varchar(20) [note: 'pending, processing, completed']
+  
+  // Record details
+  record_snapshot text [note: 'JSON snapshot of the late record']
+  
+  Note: 'Silver: Track late-arriving data for handling warehouse delays'
+  
+  indexes {
+    (arrival_timestamp) [name: 'idx_silver_late_arrival_ts']
+    (reprocessing_status) [name: 'idx_silver_late_reprocess_status']
+  }
+}
