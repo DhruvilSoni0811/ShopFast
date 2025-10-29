@@ -1,4 +1,4 @@
-# Source Tables Description
+# Silver Layer Output Tables Description
 
 ## 1. Unified Orders
   1. silver_orders - Harmonized orders from web + mobile - Single view of all orders accross channels

@@ -1,0 +1,538 @@
+// ========================================
+// GOLD LAYER - BUSINESS ANALYTICS
+// ShopFast Real-Time Inventory Sync
+// ========================================
+
+Project ShopFast_Gold {
+  database_type: 'Delta Lake'
+  Note: 'Gold layer - Business-ready dimensional model and aggregates'
+}
+
+// ========================================
+// DIMENSION TABLES
+// ========================================
+
+Table dim_product {
+  product_key bigint [pk, increment]
+  
+  // Natural key
+  sku varchar(50) [unique]
+  
+  // Product attributes
+  product_id int
+  product_name varchar(255)
+  category varchar(100)
+  subcategory varchar(100)
+  brand varchar(100)
+  
+  // Supply chain attributes
+  supplier_id varchar(50)
+  supplier_name varchar(255)
+  supplier_lead_time_days int
+  reorder_point int
+  reorder_quantity int
+  economic_order_quantity int
+  
+  // Product classification
+  is_active boolean
+  is_seasonal boolean
+  is_perishable boolean
+  is_fast_moving boolean [note: 'Based on velocity analysis']
+  abc_classification varchar(1) [note: 'A=high value, B=medium, C=low']
+  
+  // Metadata
+  created_date timestamp
+  last_updated_date timestamp
+  
+  // SCD Type 2 columns
+  effective_date timestamp [note: 'Start date of this version']
+  expiration_date timestamp [note: 'End date (null = current)']
+  is_current boolean [note: 'Current version flag']
+  version_number int
+  
+  Note: 'Dim: Product master - SCD Type 2 for tracking changes'
+  
+  indexes {
+    (sku, is_current) [name: 'idx_dim_product_sku_current']
+    (category, subcategory) [name: 'idx_dim_product_category']
+  }
+}
+
+Table dim_product_price_history {
+  price_history_key bigint [pk, increment]
+  product_key bigint [ref: > dim_product.product_key]
+  sku varchar(50)
+  
+  // Price attributes
+  list_price decimal(10,2)
+  cost decimal(10,2)
+  margin_amount decimal(10,2)
+  margin_percentage decimal(5,2)
+  
+  // Promotion
+  promotion_id varchar(50)
+  promotion_price decimal(10,2)
+  
+  // SCD Type 2 for price changes
+  effective_date timestamp
+  expiration_date timestamp
+  is_current boolean
+  price_change_reason varchar(100) [note: 'regular_update, promotion, cost_increase, competitive']
+  
+  Note: 'Dim: Product price history - SCD Type 2'
+  
+  indexes {
+    (sku, is_current) [name: 'idx_dim_price_sku_current']
+    (effective_date) [name: 'idx_dim_price_effective_date']
+  }
+}
+
+Table dim_location {
+  location_key bigint [pk, increment]
+  
+  // Natural key
+  location_id varchar(50) [unique]
+  
+  // Location attributes
+  location_name varchar(255)
+  location_type varchar(20) [note: 'warehouse, retail_store, online']
+  
+  // Address
+  address_line1 varchar(255)
+  city varchar(100)
+  state varchar(50)
+  zip varchar(20)
+  country varchar(50)
+  region varchar(50) [note: 'East, West, Central']
+  
+  // Operational attributes
+  is_active boolean
+  opened_date date
+  closed_date date
+  storage_capacity_sqft int
+  max_sku_count int
+  
+  // For warehouses
+  warehouse_type varchar(50) [note: 'distribution_center, fulfillment_center']
+  automation_level varchar(20) [note: 'manual, semi_automated, fully_automated']
+  
+  // For stores
+  store_format varchar(50) [note: 'flagship, standard, outlet']
+  daily_foot_traffic_avg int
+  
+  Note: 'Dim: Locations - warehouses and retail stores'
+  
+  indexes {
+    (location_type, is_active) [name: 'idx_dim_location_type_active']
+    (region) [name: 'idx_dim_location_region']
+  }
+}
+
+Table dim_date {
+  date_key int [pk]
+  
+  // Date attributes
+  full_date date [unique]
+  day_of_week varchar(20)
+  day_of_month int
+  day_of_year int
+  week_of_year int
+  month_number int
+  month_name varchar(20)
+  quarter int
+  year int
+  
+  // Business attributes
+  is_weekend boolean
+  is_holiday boolean
+  holiday_name varchar(100)
+  is_business_day boolean
+  
+  // Fiscal calendar
+  fiscal_year int
+  fiscal_quarter int
+  fiscal_month int
+  
+  Note: 'Dim: Date dimension for time-based analysis'
+  
+  indexes {
+    (full_date) [name: 'idx_dim_date_full_date']
+    (year, month_number) [name: 'idx_dim_date_year_month']
+  }
+}
+
+Table dim_customer {
+  customer_key bigint [pk, increment]
+  
+  // Natural key
+  customer_id varchar(50) [unique]
+  
+  // Customer attributes
+  customer_name varchar(255)
+  customer_email varchar(255)
+  customer_phone varchar(20)
+  
+  // Segmentation
+  customer_segment varchar(50) [note: 'VIP, Regular, New, At-Risk']
+  customer_tier varchar(20) [note: 'Platinum, Gold, Silver, Bronze']
+  
+  // Behavioral attributes
+  first_order_date date
+  last_order_date date
+  total_lifetime_orders int
+  total_lifetime_value decimal(12,2)
+  average_order_value decimal(10,2)
+  
+  // SCD Type 2
+  effective_date timestamp
+  expiration_date timestamp
+  is_current boolean
+  
+  Note: 'Dim: Customer - SCD Type 2 for segment changes'
+  
+  indexes {
+    (customer_id, is_current) [name: 'idx_dim_customer_id_current']
+    (customer_segment) [name: 'idx_dim_customer_segment']
+  }
+}
+
+// ========================================
+// FACT TABLES
+// ========================================
+
+Table fact_inventory_snapshot {
+  inventory_snapshot_key bigint [pk, increment]
+  
+  // Dimension keys
+  date_key int [ref: > dim_date.date_key]
+  product_key bigint [ref: > dim_product.product_key]
+  location_key bigint [ref: > dim_location.location_key]
+  
+  // Degenerate dimensions
+  sku varchar(50)
+  location_id varchar(50)
+  snapshot_timestamp timestamp
+  
+  // Inventory measures
+  physical_quantity int
+  reserved_quantity int
+  available_quantity int [note: 'Available to promise (ATP)']
+  damaged_quantity int
+  in_transit_quantity int
+  total_quantity int
+  
+  // Financial measures
+  inventory_value_at_cost decimal(12,2)
+  inventory_value_at_retail decimal(12,2)
+  potential_revenue decimal(12,2) [note: 'available_qty * price']
+  
+  // Operational measures
+  days_of_supply decimal(5,2) [note: 'Based on avg daily sales']
+  stock_coverage_days int [note: 'Days until stockout at current velocity']
+  reorder_needed boolean [note: 'available_qty < reorder_point']
+  
+  // Status flags
+  is_out_of_stock boolean
+  is_low_stock boolean [note: 'Below reorder point']
+  is_overstocked boolean [note: 'Above target max']
+  has_negative_inventory boolean [note: 'Data quality issue']
+  
+  Note: 'Fact: Inventory snapshot - state at point in time'
+  
+  indexes {
+    (date_key, product_key, location_key) [name: 'idx_fact_inv_snap_dpk_lpk']
+    (sku, snapshot_timestamp) [name: 'idx_fact_inv_snap_sku_ts']
+    (is_out_of_stock) [name: 'idx_fact_inv_snap_oos']
+    (reorder_needed) [name: 'idx_fact_inv_snap_reorder']
+  }
+}
+
+Table fact_sales_transactions {
+  transaction_key bigint [pk, increment]
+  
+  // Dimension keys
+  date_key int [ref: > dim_date.date_key]
+  product_key bigint [ref: > dim_product.product_key]
+  location_key bigint [ref: > dim_location.location_key]
+  customer_key bigint [ref: > dim_customer.customer_key]
+  
+  // Degenerate dimensions
+  transaction_id varchar(100)
+  order_id varchar(50)
+  sku varchar(50)
+  
+  // Transaction details
+  transaction_timestamp timestamp
+  transaction_type varchar(20) [note: 'sale, return']
+  channel varchar(20) [note: 'web, mobile_app, pos']
+  
+  // Quantity measures
+  quantity_sold int [note: 'Positive for sales, negative for returns']
+  quantity_returned int
+  net_quantity int
+  
+  // Financial measures
+  gross_sales_amount decimal(10,2)
+  discount_amount decimal(10,2)
+  net_sales_amount decimal(10,2)
+  cost_amount decimal(10,2)
+  gross_profit decimal(10,2)
+  margin_percentage decimal(5,2)
+  
+  // Promotion
+  promotion_applied boolean
+  promotion_code varchar(50)
+  
+  Note: 'Fact: Sales transactions - line item grain'
+  
+  indexes {
+    (date_key, product_key) [name: 'idx_fact_sales_dpk_ppk']
+    (transaction_timestamp) [name: 'idx_fact_sales_ts']
+    (customer_key) [name: 'idx_fact_sales_customer']
+  }
+}
+
+Table fact_sales_velocity {
+  velocity_key bigint [pk, increment]
+  
+  // Dimension keys
+  date_key int [ref: > dim_date.date_key]
+  product_key bigint [ref: > dim_product.product_key]
+  location_key bigint [ref: > dim_location.location_key]
+  
+  // Degenerate dimension
+  sku varchar(50)
+  calculation_date date
+  
+  // Time windows
+  sales_qty_1day int
+  sales_qty_7day int
+  sales_qty_30day int
+  sales_qty_90day int
+  
+  // Velocity metrics
+  avg_daily_sales_7day decimal(10,2)
+  avg_daily_sales_30day decimal(10,2)
+  sales_trend varchar(20) [note: 'increasing, stable, decreasing']
+  velocity_category varchar(20) [note: 'fast, medium, slow']
+  
+  // Forecasting
+  predicted_sales_next_7days int
+  predicted_sales_next_30days int
+  predicted_stockout_date date [note: 'When will we run out?']
+  stockout_risk_score decimal(3,2) [note: '0.00 to 1.00']
+  
+  // Current inventory context
+  current_available_quantity int
+  days_until_stockout int [note: 'At current velocity']
+  recommended_reorder_quantity int
+  
+  Note: 'Fact: Sales velocity and demand forecasting'
+  
+  indexes {
+    (date_key, product_key, location_key) [name: 'idx_fact_velocity_dpk_lpk']
+    (sku, calculation_date) [name: 'idx_fact_velocity_sku_date']
+    (predicted_stockout_date) [name: 'idx_fact_velocity_stockout']
+  }
+}
+
+Table fact_stockout_events {
+  stockout_event_key bigint [pk, increment]
+  
+  // Dimension keys
+  date_key int [ref: > dim_date.date_key]
+  product_key bigint [ref: > dim_product.product_key]
+  location_key bigint [ref: > dim_location.location_key]
+  
+  // Degenerate dimension
+  sku varchar(50)
+  stockout_event_id varchar(100) [unique]
+  
+  // Event timing
+  stockout_start_timestamp timestamp
+  stockout_end_timestamp timestamp
+  stockout_duration_hours decimal(10,2)
+  
+  // Impact measures
+  orders_affected int
+  orders_cancelled int
+  orders_backordered int
+  cancellation_rate decimal(5,2)
+  
+  // Revenue impact
+  potential_revenue_lost decimal(12,2)
+  actual_revenue_lost decimal(12,2)
+  customers_affected int
+  
+  // Root cause
+  stockout_reason varchar(100) [note: 'supplier_delay, demand_spike, allocation_error, system_error']
+  demand_during_stockout int
+  inventory_before_stockout int
+  
+  // Resolution
+  resolution_action varchar(100) [note: 'emergency_order, transfer, backorder, cancelled']
+  restocked_timestamp timestamp
+  restock_quantity int
+  
+  Note: 'Fact: Stockout events - track every instance and impact'
+  
+  indexes {
+    (date_key, product_key) [name: 'idx_fact_stockout_dpk_ppk']
+    (stockout_start_timestamp) [name: 'idx_fact_stockout_start']
+    (stockout_reason) [name: 'idx_fact_stockout_reason']
+  }
+}
+
+Table fact_inventory_movements {
+  movement_key bigint [pk, increment]
+  
+  // Dimension keys
+  date_key int [ref: > dim_date.date_key]
+  product_key bigint [ref: > dim_product.product_key]
+  from_location_key bigint [ref: > dim_location.location_key]
+  to_location_key bigint [ref: > dim_location.location_key]
+  
+  // Degenerate dimensions
+  movement_id varchar(100)
+  sku varchar(50)
+  
+  // Movement details
+  movement_timestamp timestamp
+  movement_type varchar(50) [note: 'sale, return, transfer, adjustment, damage, receiving']
+  
+  // Quantity
+  quantity_moved int
+  
+  // Financial impact
+  inventory_cost_impact decimal(10,2)
+  
+  // Reference
+  reference_type varchar(50)
+  reference_id varchar(100)
+  reason varchar(100)
+  
+  Note: 'Fact: Inventory movements - complete audit trail'
+  
+  indexes {
+    (date_key, product_key) [name: 'idx_fact_movements_dpk_ppk']
+    (movement_timestamp) [name: 'idx_fact_movements_ts']
+    (movement_type) [name: 'idx_fact_movements_type']
+  }
+}
+
+// ========================================
+// AGGREGATE TABLES (Performance Optimization)
+// ========================================
+
+Table agg_daily_inventory_summary {
+  summary_date date [pk]
+  location_key bigint [pk, ref: > dim_location.location_key]
+  
+  // Aggregated metrics
+  total_skus_in_stock int
+  total_skus_out_of_stock int
+  total_skus_low_stock int
+  stockout_percentage decimal(5,2)
+  
+  // Inventory value
+  total_inventory_value_at_cost decimal(15,2)
+  total_inventory_value_at_retail decimal(15,2)
+  
+  // Turnover
+  inventory_turnover_ratio decimal(10,2)
+  days_inventory_on_hand decimal(10,2)
+  
+  Note: 'Agg: Daily inventory summary by location'
+  
+  indexes {
+    (summary_date, location_key) [name: 'idx_agg_daily_inv_date_loc']
+  }
+}
+
+Table agg_product_performance_monthly {
+  performance_month date [pk, note: 'First day of month']
+  product_key bigint [pk, ref: > dim_product.product_key]
+  
+  // Sales metrics
+  total_units_sold int
+  total_revenue decimal(12,2)
+  total_gross_profit decimal(12,2)
+  avg_selling_price decimal(10,2)
+  
+  // Performance indicators
+  stockout_days int
+  stockout_rate decimal(5,2)
+  fill_rate decimal(5,2) [note: 'Orders fulfilled / total orders']
+  
+  // Ranking
+  revenue_rank int [note: 'Within category']
+  velocity_rank int [note: 'Within category']
+  
+  Note: 'Agg: Monthly product performance metrics'
+  
+  indexes {
+    (performance_month, product_key) [name: 'idx_agg_prod_perf_month_prod']
+  }
+}
+
+// ========================================
+// REAL-TIME ALERT TABLES
+// ========================================
+
+Table gold_inventory_alerts {
+  alert_id varchar(100) [pk]
+  alert_timestamp timestamp
+  alert_type varchar(50) [note: 'low_stock, stockout, reorder_needed, negative_inventory, high_demand_spike']
+  severity varchar(20) [note: 'critical, high, medium, low']
+  
+  // Product and location
+  sku varchar(50)
+  product_name varchar(255)
+  location_id varchar(50)
+  location_name varchar(255)
+  
+  // Alert details
+  current_quantity int
+  threshold_quantity int
+  variance int
+  
+  // Metrics
+  estimated_days_to_stockout int
+  lost_revenue_risk decimal(10,2)
+  
+  // Status
+  alert_status varchar(20) [note: 'open, acknowledged, resolved, ignored']
+  acknowledged_by varchar(100)
+  acknowledged_at timestamp
+  resolved_at timestamp
+  resolution_notes text
+  
+  Note: 'Gold: Real-time inventory alerts for action'
+  
+  indexes {
+    (alert_timestamp, severity) [name: 'idx_gold_alerts_ts_severity']
+    (alert_status) [name: 'idx_gold_alerts_status']
+    (sku) [name: 'idx_gold_alerts_sku']
+  }
+}
+
+Table gold_business_metrics {
+  metric_timestamp timestamp [pk]
+  metric_name varchar(100) [pk]
+  
+  // KPI values
+  metric_value decimal(15,2)
+  metric_target decimal(15,2)
+  variance decimal(15,2)
+  variance_percentage decimal(5,2)
+  
+  // Context
+  metric_category varchar(50) [note: 'inventory, sales, operations, quality']
+  measurement_period varchar(20) [note: 'realtime, hourly, daily, weekly']
+  
+  Note: 'Gold: Business KPIs - cancellation rate, sync latency, etc'
+  
+  indexes {
+    (metric_timestamp, metric_name) [name: 'idx_gold_metrics_ts_name']
+  }
+}
