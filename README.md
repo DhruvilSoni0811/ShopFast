@@ -9,3 +9,8 @@ ShopFast operates across:
 2. Mobile App (MongoDB)
 3. 3 Warehouses (CSV Exports)
 4. 2 Retail Stores (POS Systems)
+
+##Pain Point:
+- Selling items that are out of stock -> 15% cancellation rate -> $2M annual revenue loss
+
+
