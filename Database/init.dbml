@@ -1,0 +1,276 @@
+// ========================================
+// SOURCE SYSTEMS - INITIAL SCHEMA
+// ShopFast Real-Time Inventory Sync
+// ========================================
+
+Project ShopFast_Sources {
+  database_type: 'Multi-Source'
+  Note: 'Initial source systems before medallion architecture'
+}
+
+// ========================================
+// SOURCE 1: WEBSITE (PostgreSQL OLTP)
+// ========================================
+
+Table src_web_orders {
+  order_id varchar(50) [pk]
+  customer_id varchar(50)
+  order_date timestamp
+  order_status varchar(20)
+  total_amount decimal(10,2)
+  payment_method varchar(30)
+  shipping_address_id int
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: 'E-commerce website orders - PostgreSQL OLTP'
+}
+
+Table src_web_order_items {
+  order_item_id bigint [pk]
+  order_id varchar(50) [ref: > src_web_orders.order_id]
+  sku varchar(50)
+  product_name varchar(255)
+  quantity int
+  unit_price decimal(10,2)
+  discount_applied decimal(10,2)
+  fulfillment_status varchar(20)
+  warehouse_allocated varchar(50)
+  created_at timestamp
+  
+  Note: 'Line items for web orders'
+}
+
+Table src_web_inventory {
+  inventory_id bigint [pk]
+  sku varchar(50) [unique]
+  available_qty int
+  reserved_qty int
+  last_updated timestamp
+  
+  Note: 'Website inventory view - updated in real-time'
+}
+
+Table src_web_products {
+  product_id int [pk]
+  sku varchar(50) [unique]
+  product_name varchar(255)
+  category varchar(100)
+  subcategory varchar(100)
+  price decimal(10,2)
+  cost decimal(10,2)
+  supplier_id varchar(50)
+  reorder_point int
+  lead_time_days int
+  is_active boolean
+  created_at timestamp
+  
+  Note: 'Master product catalog from website database'
+}
+
+// ========================================
+// SOURCE 2: MOBILE APP (MongoDB)
+// ========================================
+
+Table src_app_orders {
+  _id varchar(50) [pk]
+  order_id varchar(50) [unique]
+  customer_id varchar(50)
+  customer_name varchar(255)
+  customer_email varchar(255)
+  customer_phone varchar(20)
+  app_version varchar(10)
+  device_type varchar(20)
+  order_date timestamp
+  status varchar(20)
+  payment_method varchar(30)
+  payment_transaction_id varchar(100)
+  payment_amount decimal(10,2)
+  payment_status varchar(20)
+  shipping_street varchar(255)
+  shipping_city varchar(100)
+  shipping_state varchar(50)
+  shipping_zip varchar(20)
+  shipping_method varchar(50)
+  tracking_number varchar(100)
+  session_id varchar(100)
+  promo_code varchar(50)
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: 'Denormalized mobile app orders - MongoDB'
+}
+
+Table src_app_order_items {
+  _id varchar(50) [pk]
+  order_id varchar(50) [ref: > src_app_orders.order_id]
+  sku varchar(50)
+  product_name varchar(255)
+  quantity int
+  unit_price decimal(10,2)
+  size varchar(20)
+  color varchar(50)
+  
+  Note: 'Flattened order items from MongoDB nested arrays'
+}
+
+Table src_app_cart_events {
+  _id varchar(50) [pk]
+  event_type varchar(50)
+  customer_id varchar(50)
+  session_id varchar(100)
+  sku varchar(50)
+  quantity int
+  timestamp timestamp
+  inventory_reserved boolean
+  expires_at timestamp
+  
+  Note: 'Real-time cart activities for inventory holds'
+}
+
+Table src_app_inventory_sync {
+  _id varchar(50) [pk]
+  sku varchar(50) [unique]
+  available_quantity int
+  display_status varchar(20)
+  last_synced timestamp
+  source_warehouse varchar(50)
+  estimated_delivery date
+  
+  Note: 'Mobile app cached inventory view - synced every 30 min'
+}
+
+// ========================================
+// SOURCE 3: WAREHOUSE CSV EXPORTS
+// ========================================
+
+Table src_wh_east_inventory {
+  sku varchar(50)
+  product_description varchar(255)
+  quantity_on_hand int
+  quantity_reserved int
+  quantity_available int
+  location varchar(50)
+  last_count_date date
+  batch_number varchar(50)
+  expiry_date date
+  warehouse_id varchar(50)
+  export_timestamp timestamp
+  
+  Note: 'WH-EAST-01 CSV export - Daily at 2 AM, arrives 6-8 AM UTC'
+  
+  indexes {
+    (sku, export_timestamp) [name: 'idx_wh_east_sku_ts']
+  }
+}
+
+Table src_wh_west_inventory {
+  item_code varchar(50)
+  item_name varchar(255)
+  on_hand_qty int
+  allocated_qty int
+  free_qty int
+  zone varchar(50)
+  last_physical_count varchar(20)
+  lot_number varchar(50)
+  warehouse_code varchar(50)
+  file_generated_at varchar(50)
+  
+  Note: 'WH-WEST-02 CSV export - Pipe delimited, different column names'
+  
+  indexes {
+    (item_code, file_generated_at) [name: 'idx_wh_west_item_ts']
+  }
+}
+
+Table src_wh_central_inventory {
+  sku varchar(50)
+  product_description varchar(255)
+  physical_inventory int
+  committed_inventory int
+  available_inventory int
+  in_transit_from_supplier int
+  damaged_qty int
+  storage_location varchar(50)
+  last_cycle_count timestamp
+  lot_batch varchar(50)
+  cost_per_unit decimal(10,2)
+  warehouse_id varchar(50)
+  snapshot_timestamp timestamp
+  
+  Note: 'WH-CENTRAL-03 CSV export - Most detailed warehouse data'
+  
+  indexes {
+    (sku, snapshot_timestamp) [name: 'idx_wh_central_sku_ts']
+  }
+}
+
+// ========================================
+// SOURCE 4: RETAIL POS SYSTEMS
+// ========================================
+
+Table src_pos_manhattan_inventory {
+  store_id varchar(50)
+  store_name varchar(255)
+  sku varchar(50)
+  product_name varchar(255)
+  quantity_on_floor int
+  quantity_in_backroom int
+  quantity_total int
+  reserved_for_online_pickup int
+  last_sold timestamp
+  price decimal(10,2)
+  on_promotion boolean
+  promo_price decimal(10,2)
+  timestamp timestamp
+  last_physical_count timestamp
+  
+  Note: 'STORE-NYC-01 REST API - Polled every 5 minutes'
+  
+  indexes {
+    (sku, timestamp) [name: 'idx_pos_manhattan_sku_ts']
+  }
+}
+
+Table src_pos_la_transactions {
+  event_id varchar(100) [pk]
+  event_type varchar(50)
+  store_id varchar(50)
+  store_name varchar(255)
+  transaction_id varchar(100)
+  timestamp timestamp
+  payment_method varchar(50)
+  payment_amount decimal(10,2)
+  tender_type varchar(50)
+  cashier_id varchar(50)
+  register_id varchar(50)
+  
+  Note: 'STORE-LA-02 Kafka stream - Real-time transaction events'
+}
+
+Table src_pos_la_transaction_items {
+  event_id varchar(100) [ref: > src_pos_la_transactions.event_id]
+  sku varchar(50)
+  product_name varchar(255)
+  quantity_sold int
+  unit_price decimal(10,2)
+  discount decimal(10,2)
+  inventory_impact int
+  
+  Note: 'Transaction line items from LA store Kafka stream'
+}
+
+Table src_pos_la_inventory_adjustments {
+  event_id varchar(100) [pk]
+  event_type varchar(50)
+  store_id varchar(50)
+  timestamp timestamp
+  reason varchar(100)
+  adjusted_by varchar(50)
+  sku varchar(50)
+  adjustment_quantity int
+  new_quantity int
+  notes text
+  
+  Note: 'Manual inventory adjustments - damaged, theft, returns'
+}
