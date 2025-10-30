@@ -1,6 +1,6 @@
 """
 Generate Master Product Catalog
-Creates the foundational SKU list used by all other data generators
+Creates the foundational SKU list and writes to Azure ADLS Gen2
 """
 
 import pandas as pd
@@ -8,14 +8,98 @@ import numpy as np
 from datetime import datetime, timedelta
 import random
 import os
+from azure.storage.filedatalake import DataLakeServiceClient
+from dotenv import load_dotenv
+load_dotenv("../.env.development.local")
+
+# ADLS Gen 2 Configuration
+STORAGE_ACCOUNT_NAME = os.getenv("ADLS_ACCOUNT_NAME")
+STORAGE_ACCOUNT_KEY = os.getenv("ADLS_ACCOUNT_KEY")
+CONTAINER_NAME = "shopfast-raw-data"
+BASE_PATH = "master_data"
 
 # Configuration
-OUTPUT_DIR = "GeneratedData"
+OUTPUT_DIR = "GeneratedData"  # Local backup
 NUM_PRODUCTS = 250
 
 # Seed for reproducibility
 random.seed(42)
 np.random.seed(42)
+
+def get_adls_client():
+    """Initialize Azure Data Lake Storage Gen2 client"""
+    try:
+        # Method 1: Using Account Key
+        service_client = DataLakeServiceClient(
+            account_url=f"https://{STORAGE_ACCOUNT_NAME}.dfs.core.windows.net",
+            credential=STORAGE_ACCOUNT_KEY
+        )
+        
+        return service_client
+    except Exception as e:
+        print(f"❌ Error connecting to ADLS: {str(e)}")
+        raise
+
+def upload_to_adls(df, file_name, container_name, folder_path):
+    """
+    Upload DataFrame to Azure ADLS Gen2 as CSV
+    
+    Parameters:
+    - df: pandas DataFrame to upload
+    - file_name: name of the file (e.g., 'master_products.csv')
+    - container_name: ADLS container/filesystem name
+    - folder_path: folder path within container (e.g., 'master_data')
+    """
+    try:
+        # Get ADLS client
+        service_client = get_adls_client()
+        
+        # Get filesystem (container) client
+        file_system_client = service_client.get_file_system_client(file_system=container_name)
+        
+        # Create container if it doesn't exist
+        try:
+            file_system_client.create_file_system()
+            print(f"✅ Created container: {container_name}")
+        except Exception as e:
+            if "ContainerAlreadyExists" in str(e) or "FilesystemAlreadyExists" in str(e):
+                print(f"ℹ️  Container already exists: {container_name}")
+            else:
+                print(f"⚠️  Error creating container: {str(e)}")
+        
+        # Create directory client
+        directory_client = file_system_client.get_directory_client(folder_path)
+        
+        # Create directory if it doesn't exist
+        try:
+            directory_client.create_directory()
+            print(f"✅ Created directory: {folder_path}")
+        except Exception as e:
+            if "PathAlreadyExists" in str(e):
+                print(f"ℹ️  Directory already exists: {folder_path}")
+            else:
+                print(f"⚠️  Error creating directory: {str(e)}")
+        
+        # Get file client
+        file_client = directory_client.get_file_client(file_name)
+        
+        # Convert DataFrame to CSV string
+        csv_data = df.to_csv(index=False)
+        
+        # Upload file (overwrite if exists)
+        file_client.upload_data(csv_data, overwrite=True)
+        
+        # Construct the full ADLS path
+        adls_path = f"abfss://{container_name}@{STORAGE_ACCOUNT_NAME}.dfs.core.windows.net/{folder_path}/{file_name}"
+        
+        print(f" Uploaded to ADLS: {adls_path}")
+        print(f"   File size: {len(csv_data)} bytes")
+        
+        return adls_path
+        
+    except Exception as e:
+        print(f"❌ Error uploading to ADLS: {str(e)}")
+        raise
 
 def generate_master_products():
     """Generate master product catalog with realistic attributes"""
@@ -25,7 +109,7 @@ def generate_master_products():
         'Electronics': {
             'subcategories': ['Computer Accessories', 'Audio', 'Cameras', 'Gaming', 'Wearables'],
             'price_range': (15, 500),
-            'cost_margin': 0.45,  # Cost is ~45% of price
+            'cost_margin': 0.45,
             'lead_time': (5, 14)
         },
         'Fashion': {
@@ -127,10 +211,10 @@ def generate_master_products():
                 # Add variations
                 if category == 'Fashion':
                     color = random.choice(colors)
-                    size = random.choice(sizes[:6])  # Exclude 'One Size' for fashion
+                    size = random.choice(sizes[:6])
                     product_name = f"{product_base} {color} {size}"
                 elif category == 'Electronics':
-                    color = random.choice(colors[:5])  # Mostly black, white, blue, etc.
+                    color = random.choice(colors[:5])
                     product_name = f"{product_base} - {color}"
                 else:
                     product_name = product_base
@@ -146,7 +230,7 @@ def generate_master_products():
                 lead_time_min, lead_time_max = cat_info['lead_time']
                 lead_time_days = random.randint(lead_time_min, lead_time_max)
                 
-                # Reorder point based on velocity (fast movers need higher reorder points)
+                # Reorder point
                 base_reorder = random.choice([30, 50, 75, 100, 150])
                 reorder_point = base_reorder
                 
@@ -154,10 +238,10 @@ def generate_master_products():
                 supplier_id = random.choice(suppliers)
                 
                 # Product status
-                is_active = random.random() > 0.05  # 95% active
+                is_active = random.random() > 0.05
                 is_seasonal = category in ['Fashion', 'Sports'] and random.random() > 0.7
                 
-                # Created date (products created over last 2 years)
+                # Created date
                 days_ago = random.randint(0, 730)
                 created_at = datetime.now() - timedelta(days=days_ago)
                 
@@ -182,45 +266,61 @@ def generate_master_products():
     # Create DataFrame
     df_products = pd.DataFrame(products)
     
-    # Add ABC classification based on price (A: high value, B: medium, C: low)
+    # Add ABC classification
     df_products['abc_classification'] = pd.qcut(
         df_products['price'], 
         q=3, 
         labels=['C', 'B', 'A']
     )
     
-    # Add velocity classification (will be used for sales generation)
+    # Add velocity classification
     df_products['velocity_category'] = np.random.choice(
         ['fast', 'medium', 'slow'],
         size=len(df_products),
-        p=[0.2, 0.5, 0.3]  # 20% fast, 50% medium, 30% slow
+        p=[0.2, 0.5, 0.3]
     )
     
     return df_products
 
 def main():
     """Main execution function"""
-    print("=" * 60)
+    print("=" * 70)
     print("ShopFast Master Product Catalog Generator")
-    print("=" * 60)
+    print("Target: Azure ADLS Gen2")
+    print("=" * 70)
     
-    # Create output directory
+    # Create local backup directory
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
-    print(f"\nGenerating {NUM_PRODUCTS} products...")
+    print(f"\n📦 Generating {NUM_PRODUCTS} products...")
     df_products = generate_master_products()
-    
-    # Save to CSV
-    output_file = os.path.join(OUTPUT_DIR, 'master_products.csv')
-    df_products.to_csv(output_file, index=False)
-    
     print(f"✅ Generated {len(df_products)} products")
-    print(f"✅ Saved to: {output_file}")
+    
+    # Save to local CSV (backup)
+    print("\n💾 Saving local backup...")
+    local_file = os.path.join(OUTPUT_DIR, 'master_products.csv')
+    df_products.to_csv(local_file, index=False)
+    print(f"✅ Local backup saved: {local_file}")
+    
+    # Upload to ADLS Gen2
+    print("\n☁️  Uploading to Azure ADLS Gen2...")
+    try:
+        adls_path = upload_to_adls(
+            df=df_products,
+            file_name='master_products.csv',
+            container_name=CONTAINER_NAME,
+            folder_path=BASE_PATH
+        )
+        print(f"✅ Successfully uploaded to ADLS")
+        print(f"   ADLS Path: {adls_path}")
+    except Exception as e:
+        print(f"❌ Failed to upload to ADLS: {str(e)}")
+        print("   Local backup is available at:", local_file)
     
     # Print summary statistics
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("PRODUCT SUMMARY")
-    print("=" * 60)
+    print("=" * 70)
     print(f"\nProducts by Category:")
     print(df_products['category'].value_counts())
     
@@ -238,9 +338,17 @@ def main():
     print(f"\nActive Products: {df_products['is_active'].sum()} ({df_products['is_active'].mean()*100:.1f}%)")
     print(f"Seasonal Products: {df_products['is_seasonal'].sum()} ({df_products['is_seasonal'].mean()*100:.1f}%)")
     
-    print("\n" + "=" * 60)
-    print("✅ Master product catalog ready for other generators!")
-    print("=" * 60)
+    print("\n" + "=" * 70)
+    print("✅ Master product catalog ready!")
+    print("=" * 70)
+    
+    print("\n📍 Next Steps:")
+    print("   1. Verify file in Azure Portal or Storage Explorer")
+    print("   2. Create external table in Databricks/Synapse:")
+    print(f"      CREATE EXTERNAL TABLE master_products")
+    print(f"      LOCATION 'abfss://{CONTAINER_NAME}@{STORAGE_ACCOUNT_NAME}.dfs.core.windows.net/{BASE_PATH}'")
+    print("   3. Run other data generators to populate source systems")
+    print("=" * 70)
 
 if __name__ == "__main__":
     main()

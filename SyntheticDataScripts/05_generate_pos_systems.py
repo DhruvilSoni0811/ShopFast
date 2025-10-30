@@ -1,19 +1,38 @@
 """
-Generate POS Systems Data
-Creates Manhattan store REST API responses and LA store Kafka messages
+ShopFast POS Systems Data Generator - ADLS Version
+Generates Manhattan store REST API responses and LA store Kafka messages
+Reads from and writes to Azure Data Lake Storage (ADLS)
 """
 
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import random
-import os
 import json
-from bson import ObjectId
+import time
+from dotenv import load_dotenv   # pip install python-dotenv
+load_dotenv("../.env.development.local")
+import os
 
-# Configuration
-INPUT_DIR = "GeneratedData"
-OUTPUT_DIR = "GeneratedData/pos"
+# ADLS CONFIGURATION
+ADLS_ACCOUNT_NAME = os.getenv("ADLS_ACCOUNT_NAME")
+ADLS_ACCOUNT_KEY = os.getenv("ADLS_ACCOUNT_KEY")
+ADLS_FILESYSTEM = "shopfast-raw-data"
+
+# Configure Spark to access ADLS
+spark.conf.set(
+    f"fs.azure.account.key.{ADLS_ACCOUNT_NAME}.dfs.core.windows.net",
+    ADLS_ACCOUNT_KEY
+)
+
+# ADLS Paths
+ADLS_BASE_PATH = f"abfss://{ADLS_FILESYSTEM}@{ADLS_ACCOUNT_NAME}.dfs.core.windows.net"
+INPUT_PATH = f"{ADLS_BASE_PATH}/master_data"
+OUTPUT_PATH = f"{ADLS_BASE_PATH}/pos"
+
+# ============================================
+# GENERATION CONFIGURATION
+# ============================================
 NUM_DAYS = 7  # Generate last 7 days
 TRANSACTIONS_PER_DAY_MANHATTAN = (40, 80)  # Slower than online
 TRANSACTIONS_PER_DAY_LA = (60, 120)  # Busier store
@@ -22,14 +41,56 @@ TRANSACTIONS_PER_DAY_LA = (60, 120)  # Busier store
 random.seed(45)
 np.random.seed(45)
 
+# ============================================
+# HELPER FUNCTIONS
+# ============================================
+
 def generate_object_id():
-    """Generate MongoDB-like ObjectId"""
-    return str(ObjectId())
+    """Generate MongoDB-like ObjectId without bson library"""
+    timestamp = int(time.time())
+    random_bytes = ''.join(f'{random.randint(0, 255):02x}' for _ in range(8))
+    return f"{timestamp:08x}{random_bytes}"
 
 def load_master_products():
-    """Load master product catalog"""
-    master_file = os.path.join(INPUT_DIR, 'master_products.csv')
-    return pd.read_csv(master_file)
+    """Load master product catalog from ADLS"""
+    master_file = f"{INPUT_PATH}/master_products.csv"
+    print(f"   Reading from: {master_file}")
+    
+    try:
+        df = spark.read.csv(master_file, header=True, inferSchema=True).toPandas()
+        return df
+    except Exception as e:
+        raise FileNotFoundError(f"❌ Cannot read {master_file}\nError: {str(e)}\nPlease ensure master_products.csv exists in ADLS!")
+
+def save_json_to_adls(data, path):
+    """Save JSON data to ADLS using Spark"""
+    # Convert to JSON string
+    json_str = json.dumps(data, indent=2)
+    
+    # Create RDD and save
+    rdd = spark.sparkContext.parallelize([json_str])
+    rdd.saveAsTextFile(path)
+
+def save_json_array_to_adls(data_list, path):
+    """Save JSON array to ADLS as a single file"""
+    # Convert to JSON lines (one object per line for easier Spark reading)
+    json_lines = [json.dumps(item) for item in data_list]
+    
+    # Create DataFrame and save as single JSON file
+    df = spark.createDataFrame([(line,) for line in json_lines], ["value"])
+    df.coalesce(1).write.mode("overwrite").text(path + "_temp")
+    
+    # Read back and save as proper JSON
+    temp_files = dbutils.fs.ls(path + "_temp")
+    json_file = [f.path for f in temp_files if f.path.endswith('.txt')][0]
+    
+    # Copy to final location
+    dbutils.fs.cp(json_file, path)
+    dbutils.fs.rm(path + "_temp", True)
+
+# ============================================
+# MANHATTAN STORE - REST API GENERATOR
+# ============================================
 
 def generate_manhattan_inventory_snapshots(df_products, num_days):
     """Generate Manhattan store REST API inventory snapshots (every 5 minutes)"""
@@ -41,6 +102,8 @@ def generate_manhattan_inventory_snapshots(df_products, num_days):
     store_products = active_products.sample(n=int(len(active_products) * 0.4))
     
     end_date = datetime.now()
+    
+    print(f"   Generating snapshots for {len(store_products)} SKUs...")
     
     # Generate snapshots every 5 minutes for last N days
     for day in range(num_days):
@@ -93,13 +156,13 @@ def generate_manhattan_inventory_snapshots(df_products, num_days):
                     inventory_snapshot.append({
                         'sku': product['sku'],
                         'product_name': product['product_name'],
-                        'quantity_on_floor': quantity_on_floor,
-                        'quantity_in_backroom': quantity_in_backroom,
-                        'quantity_total': quantity_total,
-                        'reserved_for_online_pickup': reserved_for_online_pickup,
+                        'quantity_on_floor': int(quantity_on_floor),
+                        'quantity_in_backroom': int(quantity_in_backroom),
+                        'quantity_total': int(quantity_total),
+                        'reserved_for_online_pickup': int(reserved_for_online_pickup),
                         'last_sold': last_sold,
                         'price': float(product['price']),
-                        'on_promotion': on_promotion,
+                        'on_promotion': bool(on_promotion),
                         'promo_price': float(promo_price) if promo_price else None
                     })
                 
@@ -125,6 +188,10 @@ def generate_manhattan_inventory_snapshots(df_products, num_days):
     
     return snapshots
 
+# ============================================
+# LA STORE - KAFKA STREAM GENERATOR
+# ============================================
+
 def generate_la_transactions(df_products, num_days):
     """Generate LA store Kafka transaction stream"""
     
@@ -148,6 +215,8 @@ def generate_la_transactions(df_products, num_days):
     registers = [f"REG-{i:02d}" for i in range(1, 7)]
     
     transaction_counter = 1
+    
+    print(f"   Generating transactions for {len(store_products)} SKUs...")
     
     for day in range(num_days):
         current_date = end_date - timedelta(days=num_days - day - 1)
@@ -182,7 +251,6 @@ def generate_la_transactions(df_products, num_days):
             selected_products = store_products.sample(n=num_items, weights='weight', replace=False)
             
             # Generate items
-            items = []
             total_amount = 0
             
             for _, product in selected_products.iterrows():
@@ -192,26 +260,16 @@ def generate_la_transactions(df_products, num_days):
                 if event_type == 'return':
                     quantity_sold = -quantity_sold
                 
-                unit_price = product['price']
+                unit_price = float(product['price'])
                 
                 # Discount (less common in store)
-                discount = 0
+                discount = 0.0
                 if random.random() < 0.1:
                     discount = round(unit_price * random.uniform(0.05, 0.15), 2)
                 
                 # Inventory impact
                 inventory_impact = -quantity_sold  # Negative for sales, positive for returns
                 
-                item = {
-                    'sku': product['sku'],
-                    'product_name': product['product_name'],
-                    'quantity_sold': quantity_sold,
-                    'unit_price': float(unit_price),
-                    'discount': float(discount),
-                    'inventory_impact': inventory_impact
-                }
-                
-                items.append(item)
                 total_amount += (unit_price - discount) * abs(quantity_sold)
                 
                 # For flattened version
@@ -219,10 +277,10 @@ def generate_la_transactions(df_products, num_days):
                     'event_id': event_id,
                     'sku': product['sku'],
                     'product_name': product['product_name'],
-                    'quantity_sold': quantity_sold,
+                    'quantity_sold': int(quantity_sold),
                     'unit_price': float(unit_price),
                     'discount': float(discount),
-                    'inventory_impact': inventory_impact
+                    'inventory_impact': int(inventory_impact)
                 })
             
             # Payment
@@ -251,12 +309,9 @@ def generate_la_transactions(df_products, num_days):
                 'store_name': 'ShopFast Los Angeles',
                 'transaction_id': transaction_id,
                 'timestamp': transaction_time.isoformat(),
-                'items': items,
-                'payment': {
-                    'method': payment_method,
-                    'amount': round(total_amount, 2),
-                    'tender_type': tender_type
-                },
+                'payment_method': payment_method,
+                'payment_amount': round(total_amount, 2),
+                'tender_type': tender_type,
                 'cashier_id': cashier_id,
                 'register_id': register_id
             }
@@ -266,6 +321,8 @@ def generate_la_transactions(df_products, num_days):
     
     # Generate inventory adjustment events (damage, theft, corrections)
     num_adjustments = num_days * 3  # ~3 adjustments per day
+    
+    print(f"   Generating inventory adjustments...")
     
     for _ in range(num_adjustments):
         days_ago = random.randint(0, num_days - 1)
@@ -304,30 +361,34 @@ def generate_la_transactions(df_products, num_days):
             'timestamp': adjustment_time.isoformat(),
             'reason': reason,
             'adjusted_by': random.choice(cashiers),
-            'items': [{
-                'sku': product['sku'],
-                'adjustment_quantity': adjustment_quantity,
-                'new_quantity': new_quantity,
-                'notes': f"Adjustment: {reason.replace('_', ' ').title()}"
-            }]
+            'sku': product['sku'],
+            'adjustment_quantity': int(adjustment_quantity),
+            'new_quantity': int(new_quantity),
+            'notes': f"Adjustment: {reason.replace('_', ' ').title()}"
         }
         
         adjustments.append(adjustment)
     
     return transactions, transaction_items, adjustments
 
+# ============================================
+# MAIN EXECUTION FUNCTION
+# ============================================
+
 def main():
     """Main execution function"""
     print("=" * 60)
     print("ShopFast POS Systems Data Generator")
+    print("ADLS Storage Version")
     print("=" * 60)
     
-    # Create output directories
-    os.makedirs(os.path.join(OUTPUT_DIR, 'manhattan'), exist_ok=True)
-    os.makedirs(os.path.join(OUTPUT_DIR, 'la'), exist_ok=True)
+    print(f"\n🔧 ADLS Configuration:")
+    print(f"   Account: {ADLS_ACCOUNT_NAME}")
+    print(f"   Filesystem: {ADLS_FILESYSTEM}")
+    print(f"   Base Path: {ADLS_BASE_PATH}")
     
-    # Load master products
-    print("\n📦 Loading master products...")
+    # Load master products from ADLS
+    print("\n📦 Loading master products from ADLS...")
     df_products = load_master_products()
     print(f"✅ Loaded {len(df_products)} products")
     
@@ -343,36 +404,63 @@ def main():
     print(f"✅ Generated {len(la_transactions)} transactions")
     print(f"✅ Generated {len(la_adjustments)} inventory adjustments")
     
-    # Save Manhattan data (API responses)
-    print("\n💾 Saving Manhattan store data...")
+    # Save Manhattan data to ADLS
+    print("\n💾 Saving Manhattan store data to ADLS...")
     
-    # Save as daily batches (simulating API polling every 5 minutes)
-    for day in range(NUM_DAYS):
-        day_date = (datetime.now() - timedelta(days=NUM_DAYS - day - 1)).strftime('%Y%m%d')
-        day_snapshots = [s for s in manhattan_snapshots if s['timestamp'].startswith(day_date[:4])]
-        
-        output_file = os.path.join(OUTPUT_DIR, 'manhattan', f'inventory_snapshots_{day_date}.json')
-        with open(output_file, 'w') as f:
-            json.dump(day_snapshots, f, indent=2)
-        
-        print(f"   ✅ {output_file} ({len(day_snapshots)} snapshots)")
+    # Group snapshots by day and save
+    snapshots_by_day = {}
+    for snapshot in manhattan_snapshots:
+        day_key = snapshot['timestamp'][:10].replace('-', '')
+        if day_key not in snapshots_by_day:
+            snapshots_by_day[day_key] = []
+        snapshots_by_day[day_key].append(snapshot)
     
-    # Save LA store data (Kafka messages)
-    print("\n💾 Saving LA store data...")
+    for day_key, day_snapshots in snapshots_by_day.items():
+        output_path = f"{OUTPUT_PATH}/manhattan/inventory_snapshots_{day_key}.json"
+        
+        # Convert to Spark DataFrame and save
+        df_snapshots = spark.createDataFrame([json.dumps(s) for s in day_snapshots], "string")
+        df_snapshots.coalesce(1).write.mode("overwrite").text(output_path + "_temp")
+        
+        # Find the actual file and rename
+        temp_files = dbutils.fs.ls(output_path + "_temp")
+        part_file = [f.path for f in temp_files if 'part-' in f.path][0]
+        dbutils.fs.cp(part_file, output_path)
+        dbutils.fs.rm(output_path + "_temp", True)
+        
+        print(f"   ✅ inventory_snapshots_{day_key}.json ({len(day_snapshots)} snapshots)")
+    
+    # Save LA store data to ADLS
+    print("\n💾 Saving LA store data to ADLS...")
     
     # Save transactions
-    with open(os.path.join(OUTPUT_DIR, 'la', 'transactions.json'), 'w') as f:
-        json.dump(la_transactions, f, indent=2)
+    output_path = f"{OUTPUT_PATH}/la/transactions.json"
+    df_txn = spark.createDataFrame([json.dumps(t) for t in la_transactions], "string")
+    df_txn.coalesce(1).write.mode("overwrite").text(output_path + "_temp")
+    temp_files = dbutils.fs.ls(output_path + "_temp")
+    part_file = [f.path for f in temp_files if 'part-' in f.path][0]
+    dbutils.fs.cp(part_file, output_path)
+    dbutils.fs.rm(output_path + "_temp", True)
     print(f"   ✅ transactions.json")
     
-    # Save flattened transaction items
-    with open(os.path.join(OUTPUT_DIR, 'la', 'transaction_items.json'), 'w') as f:
-        json.dump(la_items, f, indent=2)
+    # Save transaction items
+    output_path = f"{OUTPUT_PATH}/la/transaction_items.json"
+    df_items = spark.createDataFrame([json.dumps(i) for i in la_items], "string")
+    df_items.coalesce(1).write.mode("overwrite").text(output_path + "_temp")
+    temp_files = dbutils.fs.ls(output_path + "_temp")
+    part_file = [f.path for f in temp_files if 'part-' in f.path][0]
+    dbutils.fs.cp(part_file, output_path)
+    dbutils.fs.rm(output_path + "_temp", True)
     print(f"   ✅ transaction_items.json")
     
     # Save adjustments
-    with open(os.path.join(OUTPUT_DIR, 'la', 'inventory_adjustments.json'), 'w') as f:
-        json.dump(la_adjustments, f, indent=2)
+    output_path = f"{OUTPUT_PATH}/la/inventory_adjustments.json"
+    df_adj = spark.createDataFrame([json.dumps(a) for a in la_adjustments], "string")
+    df_adj.coalesce(1).write.mode("overwrite").text(output_path + "_temp")
+    temp_files = dbutils.fs.ls(output_path + "_temp")
+    part_file = [f.path for f in temp_files if 'part-' in f.path][0]
+    dbutils.fs.cp(part_file, output_path)
+    dbutils.fs.rm(output_path + "_temp", True)
     print(f"   ✅ inventory_adjustments.json")
     
     # Print summary statistics
@@ -387,17 +475,18 @@ def main():
     print(f"  Date Range: {NUM_DAYS} days")
     
     # Analyze latest snapshot
-    latest_manhattan = manhattan_snapshots[-1]
-    total_inventory = sum(item['quantity_total'] for item in latest_manhattan['inventory_snapshot'])
-    on_floor = sum(item['quantity_on_floor'] for item in latest_manhattan['inventory_snapshot'])
-    in_backroom = sum(item['quantity_in_backroom'] for item in latest_manhattan['inventory_snapshot'])
-    reserved = sum(item['reserved_for_online_pickup'] for item in latest_manhattan['inventory_snapshot'])
-    
-    print(f"  SKUs in Store: {len(latest_manhattan['inventory_snapshot'])}")
-    print(f"  Latest Total Inventory: {total_inventory} units")
-    print(f"    On Floor: {on_floor} units")
-    print(f"    In Backroom: {in_backroom} units")
-    print(f"    Reserved for Pickup: {reserved} units")
+    if manhattan_snapshots:
+        latest_manhattan = manhattan_snapshots[-1]
+        total_inventory = sum(item['quantity_total'] for item in latest_manhattan['inventory_snapshot'])
+        on_floor = sum(item['quantity_on_floor'] for item in latest_manhattan['inventory_snapshot'])
+        in_backroom = sum(item['quantity_in_backroom'] for item in latest_manhattan['inventory_snapshot'])
+        reserved = sum(item['reserved_for_online_pickup'] for item in latest_manhattan['inventory_snapshot'])
+        
+        print(f"  SKUs in Store: {len(latest_manhattan['inventory_snapshot'])}")
+        print(f"  Latest Total Inventory: {total_inventory} units")
+        print(f"    On Floor: {on_floor} units")
+        print(f"    In Backroom: {in_backroom} units")
+        print(f"    Reserved for Pickup: {reserved} units")
     
     print(f"\nLA Store (STORE-LA-02):")
     print(f"  Data Type: Kafka stream (JSON)")
@@ -411,7 +500,7 @@ def main():
     print(f"    Sales: {len(sales)}")
     print(f"    Returns: {len(returns)}")
     
-    total_revenue = sum(t['payment']['amount'] for t in sales)
+    total_revenue = sum(t['payment_amount'] for t in sales)
     avg_transaction = total_revenue / len(sales) if sales else 0
     
     print(f"  Total Revenue: ${total_revenue:,.2f}")
@@ -420,7 +509,7 @@ def main():
     # Payment methods
     payment_methods = {}
     for t in la_transactions:
-        pm = t['payment']['method']
+        pm = t['payment_method']
         payment_methods[pm] = payment_methods.get(pm, 0) + 1
     
     print(f"\n  Payment Methods:")
@@ -440,7 +529,7 @@ def main():
         print(f"      {reason}: {count}")
     
     print("\n" + "=" * 60)
-    print("✅ POS systems data ready!")
+    print("✅ POS systems data generation complete!")
     print("=" * 60)
     
     print("\n📊 Data Characteristics:")
@@ -448,7 +537,12 @@ def main():
     print("  • LA: Real-time streaming via Kafka")
     print("  • Different data structures for each store")
     print("  • Includes sales, returns, and adjustments")
+    print("\n📁 Output Location (ADLS):")
+    print(f"  {OUTPUT_PATH}")
     print("=" * 60)
 
+# ============================================
+# RUN THE GENERATOR
+# ============================================
 if __name__ == "__main__":
     main()

@@ -1,5 +1,5 @@
 """
-Generate Warehouse CSV Exports
+Generate Warehouse CSV Exports and Upload to ADLS
 Creates 3 different warehouse formats with late-arriving data simulation
 """
 
@@ -7,21 +7,95 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import random
-import os
+from io import StringIO
+from azure.storage.filedatalake import DataLakeServiceClient
+from dotenv import load_dotenv   # pip install python-dotenv
+load_dotenv("../.env.development.local")
+import os 
 
-# Configuration
-INPUT_DIR = "GeneratedData"
-OUTPUT_DIR = "GeneratedData/warehouses"
+# -------------------------
+# CONFIGURATION
+# -------------------------
+
+# ADLS Configuration
+ADLS_ACCOUNT_NAME = os.getenv("ADLS_ACCOUNT_NAME")
+ADLS_ACCOUNT_KEY = os.getenv("ADLS_ACCOUNT_KEY")
+ADLS_FILESYSTEM = "shopfast-raw-data"
+
+# ADLS paths for warehouse data
+ADLS_PATHS = {
+    'master_products': 'master_data/master_products.csv',
+    'warehouse_east': 'warehouses/east',
+    'warehouse_west': 'warehouses/west',
+    'warehouse_central': 'warehouses/central'
+}
+
+# Generator settings
 NUM_DAYS = 7  # Generate last 7 days of warehouse exports
 
 # Seed for reproducibility
 random.seed(44)
 np.random.seed(44)
 
-def load_master_products():
-    """Load master product catalog"""
-    master_file = os.path.join(INPUT_DIR, 'master_products.csv')
-    return pd.read_csv(master_file)
+# -------------------------
+# ADLS HELPER FUNCTIONS
+# -------------------------
+
+def connect_to_adls():
+    """Create ADLS service client"""
+    account_url = f"https://{ADLS_ACCOUNT_NAME}.dfs.core.windows.net"
+    return DataLakeServiceClient(account_url=account_url, credential=ADLS_ACCOUNT_KEY)
+
+def load_master_products_from_adls():
+    """Load master_products.csv from ADLS into a pandas DataFrame"""
+    print("📂 Reading master_products.csv from ADLS...")
+    service_client = connect_to_adls()
+    fs_client = service_client.get_file_system_client(file_system=ADLS_FILESYSTEM)
+    file_client = fs_client.get_file_client(ADLS_PATHS['master_products'])
+    
+    download = file_client.download_file()
+    raw = download.readall()
+    df = pd.read_csv(StringIO(raw.decode("utf-8")))
+    
+    print(f"✅ Loaded {len(df)} products from ADLS")
+    return df
+
+def upload_csv_to_adls(df, adls_path, filename, separator=','):
+    """
+    Upload a pandas DataFrame as CSV to ADLS
+    
+    Args:
+        df: pandas DataFrame to upload
+        adls_path: Directory path in ADLS (e.g., 'warehouses/east')
+        filename: Name of the file (e.g., 'wh_east_inventory_20251030.csv')
+        separator: CSV delimiter (default: ',', can be '|' for pipe-delimited)
+    """
+    service_client = connect_to_adls()
+    fs_client = service_client.get_file_system_client(file_system=ADLS_FILESYSTEM)
+    
+    # Full path in ADLS
+    full_path = f"{adls_path}/{filename}"
+    
+    # Convert DataFrame to CSV string
+    csv_buffer = StringIO()
+    df.to_csv(csv_buffer, index=False, sep=separator)
+    csv_data = csv_buffer.getvalue().encode('utf-8')
+    
+    # Upload to ADLS
+    file_client = fs_client.get_file_client(full_path)
+    
+    # Create or overwrite the file
+    file_client.create_file()
+    file_client.append_data(data=csv_data, offset=0, length=len(csv_data))
+    file_client.flush_data(len(csv_data))
+    
+    print(f"    ✅ Uploaded: {full_path} ({len(df)} rows, {len(csv_data):,} bytes)")
+    
+    return full_path
+
+# -------------------------
+# DATA GENERATION FUNCTIONS
+# -------------------------
 
 def distribute_inventory_across_warehouses(df_products):
     """Distribute total inventory across 3 warehouses realistically"""
@@ -184,7 +258,7 @@ def generate_warehouse_central(df_inventory_dist, export_date):
         # Damaged quantity (small percentage)
         damaged_qty = 0
         if physical_inventory > 0 and random.random() < 0.05:
-            damaged_qty = random.randint(1, int(physical_inventory * 0.02))
+            damaged_qty = random.randint(1, max(1, int(physical_inventory * 0.02)))
         
         # Storage location
         section = f"SEC-{random.choice(['A', 'B', 'C', 'D'])}"
@@ -220,21 +294,18 @@ def generate_warehouse_central(df_inventory_dist, export_date):
     
     return pd.DataFrame(records)
 
+# -------------------------
+# MAIN EXECUTION
+# -------------------------
+
 def main():
     """Main execution function"""
-    print("=" * 60)
-    print("ShopFast Warehouse CSV Data Generator")
-    print("=" * 60)
+    print("=" * 70)
+    print("ShopFast Warehouse CSV Data Generator - ADLS Upload")
+    print("=" * 70)
     
-    # Create output directories
-    os.makedirs(os.path.join(OUTPUT_DIR, 'east'), exist_ok=True)
-    os.makedirs(os.path.join(OUTPUT_DIR, 'west'), exist_ok=True)
-    os.makedirs(os.path.join(OUTPUT_DIR, 'central'), exist_ok=True)
-    
-    # Load master products
-    print("\n📦 Loading master products...")
-    df_products = load_master_products()
-    print(f"✅ Loaded {len(df_products)} products")
+    # Load master products from ADLS
+    df_products = load_master_products_from_adls()
     
     # Distribute inventory
     print("\n📊 Distributing inventory across 3 warehouses...")
@@ -247,9 +318,11 @@ def main():
     print(f"    TOTAL: {df_inventory_dist['total_qty'].sum():,} units")
     
     # Generate warehouse exports for last N days
-    print(f"\n📁 Generating {NUM_DAYS} days of warehouse exports...")
+    print(f"\n📁 Generating and uploading {NUM_DAYS} days of warehouse exports to ADLS...")
     
     end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    files_uploaded = {'east': [], 'west': [], 'central': []}
     
     for day in range(NUM_DAYS):
         export_date = end_date - timedelta(days=NUM_DAYS - day - 1)
@@ -263,42 +336,68 @@ def main():
             variation = np.random.randint(-10, 20, size=len(df_daily))
             df_daily[col] = (df_daily[col] + variation).clip(lower=0)
         
-        # Generate East warehouse file
+        # Generate and upload East warehouse file (comma-delimited)
         df_east = generate_warehouse_east(df_daily, export_date)
-        east_file = os.path.join(OUTPUT_DIR, 'east', f'wh_east_inventory_{date_str}.csv')
-        df_east.to_csv(east_file, index=False)
-        print(f"    ✅ East: {east_file}")
+        east_filename = f'wh_east_inventory_{date_str}.csv'
+        east_path = upload_csv_to_adls(
+            df_east, 
+            ADLS_PATHS['warehouse_east'], 
+            east_filename,
+            separator=','
+        )
+        files_uploaded['east'].append(east_path)
         
-        # Generate West warehouse file (pipe-delimited)
+        # Generate and upload West warehouse file (pipe-delimited)
         df_west = generate_warehouse_west(df_daily, export_date)
-        west_file = os.path.join(OUTPUT_DIR, 'west', f'WH_WEST_STOCK_{date_str}.csv')
-        df_west.to_csv(west_file, index=False, sep='|')
-        print(f"    ✅ West: {west_file}")
+        west_filename = f'WH_WEST_STOCK_{date_str}.csv'
+        west_path = upload_csv_to_adls(
+            df_west, 
+            ADLS_PATHS['warehouse_west'], 
+            west_filename,
+            separator='|'
+        )
+        files_uploaded['west'].append(west_path)
         
-        # Generate Central warehouse file
+        # Generate and upload Central warehouse file (comma-delimited)
         df_central = generate_warehouse_central(df_daily, export_date)
-        central_file = os.path.join(OUTPUT_DIR, 'central', f'central_warehouse_inventory_{date_str}.csv')
-        df_central.to_csv(central_file, index=False)
-        print(f"    ✅ Central: {central_file}")
+        central_filename = f'central_warehouse_inventory_{date_str}.csv'
+        central_path = upload_csv_to_adls(
+            df_central, 
+            ADLS_PATHS['warehouse_central'], 
+            central_filename,
+            separator=','
+        )
+        files_uploaded['central'].append(central_path)
     
     # Print summary statistics
-    print("\n" + "=" * 60)
-    print("WAREHOUSE DATA SUMMARY")
-    print("=" * 60)
+    print("\n" + "=" * 70)
+    print("WAREHOUSE DATA UPLOAD SUMMARY")
+    print("=" * 70)
     
-    print(f"\nFiles Generated:")
-    print(f"  East Warehouse: {NUM_DAYS} files (comma-delimited)")
-    print(f"  West Warehouse: {NUM_DAYS} files (pipe-delimited)")
-    print(f"  Central Warehouse: {NUM_DAYS} files (comma-delimited)")
+    print(f"\nFiles Uploaded to ADLS:")
+    print(f"  Container: {ADLS_FILESYSTEM}")
+    print(f"  East Warehouse: {len(files_uploaded['east'])} files (comma-delimited)")
+    print(f"  West Warehouse: {len(files_uploaded['west'])} files (pipe-delimited)")
+    print(f"  Central Warehouse: {len(files_uploaded['central'])} files (comma-delimited)")
     
-    # Load and analyze most recent files
+    print(f"\nADLS Paths:")
+    print(f"  📁 {ADLS_PATHS['warehouse_east']}/")
+    print(f"  📁 {ADLS_PATHS['warehouse_west']}/")
+    print(f"  📁 {ADLS_PATHS['warehouse_central']}/")
+    
+    # Load most recent file from ADLS for statistics
     latest_date = end_date.strftime('%Y%m%d')
     
-    df_east_latest = pd.read_csv(os.path.join(OUTPUT_DIR, 'east', f'wh_east_inventory_{latest_date}.csv'))
-    df_west_latest = pd.read_csv(os.path.join(OUTPUT_DIR, 'west', f'WH_WEST_STOCK_{latest_date}.csv'), sep='|')
-    df_central_latest = pd.read_csv(os.path.join(OUTPUT_DIR, 'central', f'central_warehouse_inventory_{latest_date}.csv'))
-    
     print(f"\nLatest Export Statistics ({end_date.strftime('%Y-%m-%d')}):")
+    
+    service_client = connect_to_adls()
+    fs_client = service_client.get_file_system_client(file_system=ADLS_FILESYSTEM)
+    
+    # East warehouse stats
+    east_latest_path = f"{ADLS_PATHS['warehouse_east']}/wh_east_inventory_{latest_date}.csv"
+    file_client = fs_client.get_file_client(east_latest_path)
+    download = file_client.download_file()
+    df_east_latest = pd.read_csv(StringIO(download.readall().decode('utf-8')))
     
     print(f"\n  East Warehouse:")
     print(f"    Total SKUs: {len(df_east_latest)}")
@@ -308,6 +407,12 @@ def main():
     stockouts_east = len(df_east_latest[df_east_latest['QuantityAvailable'] == 0])
     print(f"    Stockouts: {stockouts_east} SKUs ({stockouts_east/len(df_east_latest)*100:.1f}%)")
     
+    # West warehouse stats
+    west_latest_path = f"{ADLS_PATHS['warehouse_west']}/WH_WEST_STOCK_{latest_date}.csv"
+    file_client = fs_client.get_file_client(west_latest_path)
+    download = file_client.download_file()
+    df_west_latest = pd.read_csv(StringIO(download.readall().decode('utf-8')), sep='|')
+    
     print(f"\n  West Warehouse:")
     print(f"    Total SKUs: {len(df_west_latest)}")
     print(f"    Total Inventory: {df_west_latest['ON_HAND_QTY'].sum():,} units")
@@ -315,6 +420,12 @@ def main():
     print(f"    Free: {df_west_latest['FREE_QTY'].sum():,} units")
     stockouts_west = len(df_west_latest[df_west_latest['FREE_QTY'] == 0])
     print(f"    Stockouts: {stockouts_west} SKUs ({stockouts_west/len(df_west_latest)*100:.1f}%)")
+    
+    # Central warehouse stats
+    central_latest_path = f"{ADLS_PATHS['warehouse_central']}/central_warehouse_inventory_{latest_date}.csv"
+    file_client = fs_client.get_file_client(central_latest_path)
+    download = file_client.download_file()
+    df_central_latest = pd.read_csv(StringIO(download.readall().decode('utf-8')))
     
     print(f"\n  Central Warehouse:")
     print(f"    Total SKUs: {len(df_central_latest)}")
@@ -332,14 +443,14 @@ def main():
     
     print(f"\n  Combined Total Inventory: {total_inventory:,} units")
     
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("⚠️  NOTE: Warehouse files simulate late-arriving data")
     print("   - Files exported at 2 AM local time")
     print("   - Assume arrival in data lake 6-8 hours later")
-    print("=" * 60)
+    print("=" * 70)
     
-    print("\n✅ Warehouse CSV data ready!")
-    print("=" * 60)
+    print("\n✅ Warehouse CSV data successfully uploaded to ADLS!")
+    print("=" * 70)
 
 if __name__ == "__main__":
     main()
