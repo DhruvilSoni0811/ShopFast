@@ -1,0 +1,368 @@
+// ========================================
+// BRONZE LAYER - RAW INGESTION
+// ShopFast Real-Time Inventory Sync
+// ========================================
+
+Project ShopFast_Bronze {
+  database_type: 'Delta Lake'
+  Note: 'Bronze layer - Raw data with metadata tracking'
+}
+
+// ========================================
+// BRONZE: WEBSITE DATA (CDC from PostgreSQL)
+// ========================================
+
+Table bronze_web_orders {
+  order_id varchar(50) [pk]
+  customer_id varchar(50)
+  order_date timestamp
+  order_status varchar(20)
+  total_amount decimal(10,2)
+  payment_method varchar(30)
+  shipping_address_id int
+  created_at timestamp
+  updated_at timestamp
+  
+  // Bronze metadata columns
+  _source_system varchar(50) [note: 'website_postgresql']
+  _ingestion_timestamp timestamp [note: 'When record entered bronze']
+  _cdc_operation varchar(10) [note: 'INSERT, UPDATE, DELETE']
+  _cdc_timestamp timestamp [note: 'When change occurred in source']
+  _record_hash varchar(64) [note: 'MD5 hash for change detection']
+  
+  Note: 'Bronze: Website orders - CDC ingestion'
+  
+  indexes {
+    (_ingestion_timestamp) [name: 'idx_bronze_web_orders_ingest']
+  }
+}
+
+Table bronze_web_order_items {
+  order_item_id bigint [pk]
+  order_id varchar(50)
+  sku varchar(50)
+  product_name varchar(255)
+  quantity int
+  unit_price decimal(10,2)
+  discount_applied decimal(10,2)
+  fulfillment_status varchar(20)
+  warehouse_allocated varchar(50)
+  created_at timestamp
+  
+  // Bronze metadata
+  _source_system varchar(50)
+  _ingestion_timestamp timestamp
+  _cdc_operation varchar(10)
+  _cdc_timestamp timestamp
+  _record_hash varchar(64)
+  
+  Note: 'Bronze: Website order items - CDC ingestion'
+}
+
+Table bronze_web_inventory {
+  inventory_id bigint [pk]
+  sku varchar(50)
+  available_qty int
+  reserved_qty int
+  last_updated timestamp
+  
+  // Bronze metadata
+  _source_system varchar(50)
+  _ingestion_timestamp timestamp
+  _cdc_operation varchar(10)
+  _cdc_timestamp timestamp
+  _record_hash varchar(64)
+  
+  Note: 'Bronze: Website inventory snapshot - CDC ingestion'
+}
+
+Table bronze_web_products {
+  product_id int [pk]
+  sku varchar(50)
+  product_name varchar(255)
+  category varchar(100)
+  subcategory varchar(100)
+  price decimal(10,2)
+  cost decimal(10,2)
+  supplier_id varchar(50)
+  reorder_point int
+  lead_time_days int
+  is_active boolean
+  created_at timestamp
+  
+  // Bronze metadata
+  _source_system varchar(50)
+  _ingestion_timestamp timestamp
+  _cdc_operation varchar(10)
+  _cdc_timestamp timestamp
+  _record_hash varchar(64)
+  
+  Note: 'Bronze: Product master data - CDC ingestion'
+}
+
+// ========================================
+// BRONZE: MOBILE APP DATA (MongoDB Streams)
+// ========================================
+
+Table bronze_app_orders {
+  _id varchar(50) [pk]
+  order_id varchar(50)
+  customer_id varchar(50)
+  customer_name varchar(255)
+  customer_email varchar(255)
+  customer_phone varchar(20)
+  app_version varchar(10)
+  device_type varchar(20)
+  order_date timestamp
+  status varchar(20)
+  payment_method varchar(30)
+  payment_transaction_id varchar(100)
+  payment_amount decimal(10,2)
+  payment_status varchar(20)
+  shipping_street varchar(255)
+  shipping_city varchar(100)
+  shipping_state varchar(50)
+  shipping_zip varchar(20)
+  shipping_method varchar(50)
+  tracking_number varchar(100)
+  session_id varchar(100)
+  promo_code varchar(50)
+  created_at timestamp
+  updated_at timestamp
+  
+  // Bronze metadata
+  _source_system varchar(50) [note: 'mobile_app_mongodb']
+  _ingestion_timestamp timestamp
+  _mongodb_operation varchar(10) [note: 'insert, update, replace, delete']
+  _mongodb_resume_token varchar(255) [note: 'For change stream checkpoint']
+  _raw_document text [note: 'Original JSON for audit']
+  
+  Note: 'Bronze: Mobile app orders - MongoDB change streams'
+}
+
+Table bronze_app_order_items {
+  _id varchar(50) [pk]
+  order_id varchar(50)
+  sku varchar(50)
+  product_name varchar(255)
+  quantity int
+  unit_price decimal(10,2)
+  size varchar(20)
+  color varchar(50)
+  
+  // Bronze metadata
+  _source_system varchar(50)
+  _ingestion_timestamp timestamp
+  _parent_document_id varchar(50)
+  _array_index int [note: 'Position in original array']
+  
+  Note: 'Bronze: Flattened app order items'
+}
+
+Table bronze_app_cart_events {
+  _id varchar(50) [pk]
+  event_type varchar(50)
+  customer_id varchar(50)
+  session_id varchar(100)
+  sku varchar(50)
+  quantity int
+  timestamp timestamp
+  inventory_reserved boolean
+  expires_at timestamp
+  
+  // Bronze metadata
+  _source_system varchar(50)
+  _ingestion_timestamp timestamp
+  _mongodb_operation varchar(10)
+  
+  Note: 'Bronze: Cart events for inventory holds'
+}
+
+Table bronze_app_inventory_sync {
+  _id varchar(50) [pk]
+  sku varchar(50)
+  available_quantity int
+  display_status varchar(20)
+  last_synced timestamp
+  source_warehouse varchar(50)
+  estimated_delivery date
+  
+  // Bronze metadata
+  _source_system varchar(50)
+  _ingestion_timestamp timestamp
+  _mongodb_operation varchar(10)
+  
+  Note: 'Bronze: App inventory cache snapshots'
+}
+
+// ========================================
+// BRONZE: WAREHOUSE CSV FILES (AutoLoader)
+// ========================================
+
+Table bronze_wh_east_inventory {
+  sku varchar(50)
+  product_description varchar(255)
+  quantity_on_hand int
+  quantity_reserved int
+  quantity_available int
+  location varchar(50)
+  last_count_date date
+  batch_number varchar(50)
+  expiry_date date
+  warehouse_id varchar(50)
+  export_timestamp timestamp
+  
+  // Bronze metadata
+  _source_system varchar(50) [note: 'warehouse_east_csv']
+  _ingestion_timestamp timestamp
+  _file_name varchar(255) [note: 'wh_east_inventory_YYYYMMDD.csv']
+  _file_path varchar(500)
+  _file_modification_time timestamp
+  _row_number bigint [note: 'Line number in CSV']
+  
+  Note: 'Bronze: East warehouse CSV - AutoLoader ingestion'
+}
+
+Table bronze_wh_west_inventory {
+  item_code varchar(50)
+  item_name varchar(255)
+  on_hand_qty int
+  allocated_qty int
+  free_qty int
+  zone varchar(50)
+  last_physical_count varchar(20) [note: 'Raw string - needs parsing']
+  lot_number varchar(50)
+  warehouse_code varchar(50)
+  file_generated_at varchar(50) [note: 'Raw string - needs parsing']
+  
+  // Bronze metadata
+  _source_system varchar(50) [note: 'warehouse_west_csv']
+  _ingestion_timestamp timestamp
+  _file_name varchar(255)
+  _file_path varchar(500)
+  _file_modification_time timestamp
+  _row_number bigint
+  
+  Note: 'Bronze: West warehouse CSV - Pipe delimited'
+}
+
+Table bronze_wh_central_inventory {
+  sku varchar(50)
+  product_description varchar(255)
+  physical_inventory int
+  committed_inventory int
+  available_inventory int
+  in_transit_from_supplier int
+  damaged_qty int
+  storage_location varchar(50)
+  last_cycle_count timestamp
+  lot_batch varchar(50)
+  cost_per_unit decimal(10,2)
+  warehouse_id varchar(50)
+  snapshot_timestamp timestamp
+  
+  // Bronze metadata
+  _source_system varchar(50) [note: 'warehouse_central_csv']
+  _ingestion_timestamp timestamp
+  _file_name varchar(255)
+  _file_path varchar(500)
+  _file_modification_time timestamp
+  _row_number bigint
+  
+  Note: 'Bronze: Central warehouse CSV - Most detailed'
+}
+
+// ========================================
+// BRONZE: RETAIL POS SYSTEMS
+// ========================================
+
+Table bronze_pos_manhattan_inventory {
+  store_id varchar(50)
+  store_name varchar(255)
+  sku varchar(50)
+  product_name varchar(255)
+  quantity_on_floor int
+  quantity_in_backroom int
+  quantity_total int
+  reserved_for_online_pickup int
+  last_sold timestamp
+  price decimal(10,2)
+  on_promotion boolean
+  promo_price decimal(10,2)
+  api_timestamp timestamp
+  last_physical_count timestamp
+  
+  // Bronze metadata
+  _source_system varchar(50) [note: 'pos_manhattan_api']
+  _ingestion_timestamp timestamp
+  _api_request_id varchar(100)
+  _api_response_status int [note: 'HTTP status code']
+  _api_latency_ms int
+  
+  Note: 'Bronze: Manhattan POS REST API - 5 min polling'
+}
+
+Table bronze_pos_la_transactions {
+  event_id varchar(100) [pk]
+  event_type varchar(50)
+  store_id varchar(50)
+  store_name varchar(255)
+  transaction_id varchar(100)
+  event_timestamp timestamp
+  payment_method varchar(50)
+  payment_amount decimal(10,2)
+  tender_type varchar(50)
+  cashier_id varchar(50)
+  register_id varchar(50)
+  
+  // Bronze metadata
+  _source_system varchar(50) [note: 'pos_la_kafka']
+  _ingestion_timestamp timestamp
+  _kafka_topic varchar(100)
+  _kafka_partition int
+  _kafka_offset bigint
+  _kafka_timestamp timestamp
+  _raw_message text [note: 'Original Avro/JSON']
+  
+  Note: 'Bronze: LA POS Kafka stream - Real-time'
+}
+
+Table bronze_pos_la_transaction_items {
+  event_id varchar(100)
+  sku varchar(50)
+  product_name varchar(255)
+  quantity_sold int
+  unit_price decimal(10,2)
+  discount decimal(10,2)
+  inventory_impact int
+  
+  // Bronze metadata
+  _source_system varchar(50)
+  _ingestion_timestamp timestamp
+  _kafka_offset bigint
+  _item_sequence int [note: 'Order within transaction']
+  
+  Note: 'Bronze: LA transaction items - Kafka stream'
+}
+
+Table bronze_pos_la_inventory_adjustments {
+  event_id varchar(100) [pk]
+  event_type varchar(50)
+  store_id varchar(50)
+  event_timestamp timestamp
+  reason varchar(100)
+  adjusted_by varchar(50)
+  sku varchar(50)
+  adjustment_quantity int
+  new_quantity int
+  notes text
+  
+  // Bronze metadata
+  _source_system varchar(50)
+  _ingestion_timestamp timestamp
+  _kafka_topic varchar(100)
+  _kafka_partition int
+  _kafka_offset bigint
+  
+  Note: 'Bronze: LA inventory adjustments - Kafka stream'
+}
