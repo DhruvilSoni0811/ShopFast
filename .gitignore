@@ -1,0 +1,4 @@
+# Environment files – never commit real secrets
+.env*
+!.env.example
+!.env.developement.local

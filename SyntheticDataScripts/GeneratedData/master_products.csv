@@ -1,0 +1,251 @@
+product_id,sku,product_name,category,subcategory,price,cost,supplier_id,reorder_point,lead_time_days,is_active,is_seasonal,created_at,abc_classification,velocity_category
+1,ELEC-CO-001,Wireless Mouse - Black,Electronics,Computer Accessories,374.65,168.59,SUP-FASHION-01,50,8,True,False,2023-12-08 12:04:49,A,medium
+2,ELEC-CO-002,Mouse Pad - Black,Electronics,Computer Accessories,301.39,135.63,SUP-TECH-02,30,5,True,False,2024-05-31 12:04:49,A,slow
+3,ELEC-CO-003,Mouse Pad - Black,Electronics,Computer Accessories,287.2,129.24,SUP-FASHION-02,100,13,True,False,2025-01-19 12:04:49,A,slow
+4,ELEC-CO-004,Wireless Mouse - White,Electronics,Computer Accessories,353.6,159.12,SUP-FASHION-01,75,10,True,False,2024-11-20 12:04:49,A,medium
+5,ELEC-CO-005,Wireless Mouse - Black,Electronics,Computer Accessories,199.26,89.67,SUP-IMPORT-01,75,10,True,False,2025-09-16 12:04:49,A,fast
+6,ELEC-CO-006,Webcam - Green,Electronics,Computer Accessories,75.54,33.99,SUP-DIRECT-01,30,11,True,False,2024-01-26 12:04:49,B,fast
+7,ELEC-CO-007,Mouse Pad - Blue,Electronics,Computer Accessories,295.02,132.76,SUP-FASHION-02,30,6,True,False,2025-08-10 12:04:49,A,fast
+8,ELEC-CO-008,Keyboard - Black,Electronics,Computer Accessories,199.36,89.71,SUP-FASHION-01,75,12,True,False,2025-03-30 12:04:49,A,slow
+9,ELEC-CO-009,USB Hub - Black,Electronics,Computer Accessories,310.43,139.69,SUP-FASHION-02,150,7,True,False,2024-10-07 12:04:49,A,medium
+10,ELEC-CO-010,USB Hub - Green,Electronics,Computer Accessories,121.51,54.68,SUP-FASHION-02,30,10,True,False,2024-12-11 12:04:49,B,slow
+11,ELEC-AU-011,Microphone - Blue,Electronics,Audio,47.1,21.2,SUP-FASHION-02,75,14,True,False,2024-09-20 12:04:49,C,fast
+12,ELEC-AU-012,Microphone - White,Electronics,Audio,143.47,64.56,SUP-DIRECT-01,150,8,True,False,2024-03-11 12:04:49,A,slow
+13,ELEC-AU-013,Microphone - Green,Electronics,Audio,208.71,93.92,SUP-DIRECT-01,50,8,True,False,2025-09-12 12:04:49,A,slow
+14,ELEC-AU-014,Bluetooth Speaker - White,Electronics,Audio,319.31,143.69,SUP-TECH-02,150,11,True,False,2024-02-28 12:04:49,A,medium
+15,ELEC-AU-015,Microphone - Green,Electronics,Audio,136.94,61.62,SUP-TECH-02,30,13,True,False,2024-04-29 12:04:49,B,fast
+16,ELEC-AU-016,Earbuds - Blue,Electronics,Audio,69.1,31.09,SUP-GLOBAL-01,50,11,False,False,2025-02-03 12:04:49,C,fast
+17,ELEC-AU-017,Sound Bar - White,Electronics,Audio,261.23,117.55,SUP-DIRECT-01,75,6,True,False,2025-05-27 12:04:49,A,medium
+18,ELEC-AU-018,Earbuds - White,Electronics,Audio,276.6,124.47,SUP-IMPORT-01,30,13,True,False,2025-10-11 12:04:49,A,medium
+19,ELEC-AU-019,Bluetooth Speaker - Blue,Electronics,Audio,441.18,198.53,SUP-TECH-01,50,9,True,False,2024-03-29 12:04:49,A,medium
+20,ELEC-AU-020,Bluetooth Speaker - Black,Electronics,Audio,369.98,166.49,SUP-FASHION-01,150,6,True,False,2024-07-01 12:04:49,A,medium
+21,ELEC-CA-021,Lens Kit - White,Electronics,Cameras,143.55,64.6,SUP-FASHION-02,100,14,True,False,2023-11-24 12:04:49,A,medium
+22,ELEC-CA-022,Action Camera - Blue,Electronics,Cameras,208.51,93.83,SUP-DIRECT-01,100,10,True,False,2025-02-19 12:04:49,A,fast
+23,ELEC-CA-023,Action Camera - Black,Electronics,Cameras,178.97,80.54,SUP-FASHION-02,150,14,True,False,2025-10-23 12:04:49,A,medium
+24,ELEC-CA-024,Digital Camera - Black,Electronics,Cameras,126.04,56.72,SUP-TECH-02,75,5,True,False,2025-01-18 12:04:49,B,medium
+25,ELEC-CA-025,Camera Bag - White,Electronics,Cameras,276.53,124.44,SUP-GLOBAL-01,150,14,True,False,2024-07-03 12:04:49,A,medium
+26,ELEC-CA-026,Camera Bag - White,Electronics,Cameras,60.75,27.34,SUP-BEAUTY-01,75,11,True,False,2025-09-05 12:04:49,C,slow
+27,ELEC-CA-027,Digital Camera - Black,Electronics,Cameras,210.27,94.62,SUP-FASHION-02,30,10,True,False,2024-04-29 12:04:49,A,fast
+28,ELEC-CA-028,Camera Bag - White,Electronics,Cameras,219.61,98.82,SUP-FASHION-02,100,9,True,False,2025-08-14 12:04:49,A,medium
+29,ELEC-CA-029,Camera Bag - Green,Electronics,Cameras,62.49,28.12,SUP-TECH-02,30,13,True,False,2025-03-02 12:04:49,C,medium
+30,ELEC-CA-030,Action Camera - Red,Electronics,Cameras,250.54,112.74,SUP-TECH-01,100,8,True,False,2025-10-28 12:04:49,A,fast
+31,ELEC-GA-031,Keyboard - Blue,Electronics,Gaming,464.36,208.96,SUP-BEAUTY-01,75,12,True,False,2024-04-09 12:04:49,A,medium
+32,ELEC-GA-032,Keyboard - White,Electronics,Gaming,107.1,48.2,SUP-IMPORT-01,30,8,True,False,2025-08-29 12:04:49,B,fast
+33,ELEC-GA-033,Headset - Black,Electronics,Gaming,39.32,17.69,SUP-DIRECT-01,150,12,True,False,2024-05-28 12:04:49,C,fast
+34,ELEC-GA-034,Gaming Mouse - White,Electronics,Gaming,48.23,21.7,SUP-BEAUTY-01,50,6,True,False,2024-03-26 12:04:49,C,slow
+35,ELEC-GA-035,Controller - Green,Electronics,Gaming,303.34,136.5,SUP-BEAUTY-01,30,14,True,False,2024-03-31 12:04:49,A,slow
+36,ELEC-GA-036,Chair - Blue,Electronics,Gaming,468.33,210.75,SUP-FASHION-02,75,8,True,False,2025-06-18 12:04:49,A,slow
+37,ELEC-GA-037,Headset - Red,Electronics,Gaming,168.35,75.76,SUP-GLOBAL-01,30,6,True,False,2024-04-02 12:04:49,A,medium
+38,ELEC-GA-038,Gaming Mouse - Black,Electronics,Gaming,275.75,124.09,SUP-FASHION-01,75,13,True,False,2025-08-21 12:04:49,A,fast
+39,ELEC-GA-039,Controller - Blue,Electronics,Gaming,153.22,68.95,SUP-HOME-01,150,12,True,False,2023-12-31 12:04:49,A,medium
+40,ELEC-GA-040,Chair - Black,Electronics,Gaming,338.91,152.51,SUP-TECH-02,75,13,True,False,2025-06-15 12:04:49,A,medium
+41,ELEC-WE-041,Activity Band - Black,Electronics,Wearables,446.51,200.93,SUP-HOME-01,50,13,True,False,2025-03-29 12:04:49,A,fast
+42,ELEC-WE-042,Activity Band - White,Electronics,Wearables,348.44,156.8,SUP-GLOBAL-01,150,9,True,False,2025-09-08 12:04:49,A,medium
+43,ELEC-WE-043,Fitness Tracker - Red,Electronics,Wearables,417.23,187.75,SUP-SPORTS-01,30,5,True,False,2024-01-17 12:04:49,A,fast
+44,ELEC-WE-044,Activity Band - White,Electronics,Wearables,374.5,168.53,SUP-DIRECT-01,100,13,False,False,2025-08-14 12:04:49,A,slow
+45,ELEC-WE-045,Smart Watch - Green,Electronics,Wearables,32.47,14.61,SUP-DIRECT-01,150,10,True,False,2025-06-22 12:04:49,C,medium
+46,ELEC-WE-046,Fitness Tracker - Blue,Electronics,Wearables,191.86,86.34,SUP-FASHION-02,75,5,True,False,2023-12-18 12:04:49,A,medium
+47,ELEC-WE-047,Fitness Tracker - Blue,Electronics,Wearables,393.36,177.01,SUP-FASHION-01,150,11,True,False,2025-03-02 12:04:49,A,medium
+48,ELEC-WE-048,Smart Watch - White,Electronics,Wearables,442.49,199.12,SUP-SPORTS-01,50,5,True,False,2024-09-04 12:04:49,A,medium
+49,ELEC-WE-049,Smart Watch - Blue,Electronics,Wearables,92.21,41.49,SUP-TECH-01,100,6,True,False,2025-03-17 12:04:49,B,medium
+50,ELEC-WE-050,Smart Watch - Red,Electronics,Wearables,184.58,83.06,SUP-TECH-01,50,8,True,False,2024-09-17 12:04:49,A,fast
+51,FASH-T--051,Graphic Tee Green XS,Fashion,T-Shirts,145.36,50.88,SUP-DIRECT-01,75,11,True,True,2024-04-29 12:04:49,A,slow
+52,FASH-T--052,Graphic Tee Black XS,Fashion,T-Shirts,132.79,46.48,SUP-IMPORT-01,50,11,True,False,2025-07-11 12:04:49,B,slow
+53,FASH-T--053,Tank Top Pink M,Fashion,T-Shirts,112.0,39.2,SUP-IMPORT-01,100,12,True,False,2024-03-19 12:04:49,B,slow
+54,FASH-T--054,V-Neck Tee Green XS,Fashion,T-Shirts,109.23,38.23,SUP-DIRECT-01,150,7,True,True,2023-12-14 12:04:49,B,slow
+55,FASH-T--055,V-Neck Tee Gray L,Fashion,T-Shirts,19.8,6.93,SUP-IMPORT-01,75,17,True,True,2024-12-27 12:04:49,C,medium
+56,FASH-T--056,Tank Top Green XXL,Fashion,T-Shirts,67.18,23.51,SUP-DIRECT-01,75,13,True,False,2024-10-07 12:04:49,C,slow
+57,FASH-T--057,V-Neck Tee Navy XL,Fashion,T-Shirts,52.13,18.25,SUP-HOME-01,30,15,True,False,2024-03-16 12:04:49,C,fast
+58,FASH-T--058,Tank Top Gray L,Fashion,T-Shirts,71.85,25.15,SUP-DIRECT-01,50,17,True,True,2025-05-10 12:04:49,B,fast
+59,FASH-T--059,Cotton T-Shirt Green XL,Fashion,T-Shirts,102.94,36.03,SUP-TECH-02,75,16,True,True,2023-12-12 12:04:49,B,fast
+60,FASH-T--060,Graphic Tee Red S,Fashion,T-Shirts,30.63,10.72,SUP-GLOBAL-01,50,7,True,True,2024-07-21 12:04:49,C,medium
+61,FASH-JE-061,Relaxed Fit Jeans Navy S,Fashion,Jeans,110.57,38.7,SUP-BEAUTY-01,100,13,True,False,2025-10-25 12:04:49,B,medium
+62,FASH-JE-062,Denim Jeans Pink S,Fashion,Jeans,34.62,12.12,SUP-GLOBAL-01,150,18,True,False,2025-06-28 12:04:49,C,medium
+63,FASH-JE-063,Relaxed Fit Jeans Blue L,Fashion,Jeans,103.46,36.21,SUP-SPORTS-01,150,15,True,True,2024-02-11 12:04:49,B,slow
+64,FASH-JE-064,Distressed Jeans Pink XL,Fashion,Jeans,72.43,25.35,SUP-GLOBAL-01,100,9,True,False,2024-01-17 12:04:49,B,medium
+65,FASH-JE-065,Boot Cut Jeans Brown L,Fashion,Jeans,97.74,34.21,SUP-TECH-02,100,11,True,False,2024-11-21 12:04:49,B,medium
+66,FASH-JE-066,Boot Cut Jeans Brown XS,Fashion,Jeans,29.37,10.28,SUP-FASHION-01,100,10,True,False,2024-09-08 12:04:49,C,medium
+67,FASH-JE-067,Boot Cut Jeans Brown L,Fashion,Jeans,68.21,23.87,SUP-BEAUTY-01,100,10,True,False,2023-11-18 12:04:49,C,fast
+68,FASH-JE-068,Denim Jeans Navy L,Fashion,Jeans,76.78,26.87,SUP-BEAUTY-01,75,12,True,True,2024-08-27 12:04:49,B,slow
+69,FASH-JE-069,Distressed Jeans Brown XL,Fashion,Jeans,135.69,47.49,SUP-HOME-01,50,14,True,False,2024-11-20 12:04:49,B,fast
+70,FASH-JE-070,Relaxed Fit Jeans Blue L,Fashion,Jeans,138.74,48.56,SUP-TECH-01,150,16,True,False,2023-12-22 12:04:49,B,slow
+71,FASH-DR-071,Summer Dress White XXL,Fashion,Dresses,70.01,24.5,SUP-FASHION-01,100,20,True,False,2025-03-28 12:04:49,C,slow
+72,FASH-DR-072,Maxi Dress Gray M,Fashion,Dresses,116.57,40.8,SUP-BEAUTY-01,75,13,True,False,2025-10-11 12:04:49,B,fast
+73,FASH-DR-073,Cocktail Dress Black M,Fashion,Dresses,41.39,14.49,SUP-TECH-01,30,8,True,False,2025-10-10 12:04:49,C,fast
+74,FASH-DR-074,Cocktail Dress Blue S,Fashion,Dresses,27.67,9.68,SUP-IMPORT-01,30,17,True,False,2025-02-10 12:04:49,C,slow
+75,FASH-DR-075,Casual Dress Blue XL,Fashion,Dresses,95.01,33.25,SUP-FASHION-01,30,18,True,False,2025-10-04 12:04:49,B,slow
+76,FASH-DR-076,Casual Dress Navy XXL,Fashion,Dresses,137.12,47.99,SUP-FASHION-02,100,13,True,False,2024-01-27 12:04:49,B,slow
+77,FASH-DR-077,Evening Gown White XXL,Fashion,Dresses,118.15,41.35,SUP-TECH-02,150,20,True,False,2025-09-18 12:04:49,B,slow
+78,FASH-DR-078,Casual Dress Brown L,Fashion,Dresses,102.61,35.91,SUP-SPORTS-01,150,8,False,False,2024-06-16 12:04:49,B,fast
+79,FASH-DR-079,Summer Dress Pink M,Fashion,Dresses,98.98,34.64,SUP-FASHION-01,100,20,True,True,2024-01-03 12:04:49,B,medium
+80,FASH-DR-080,Casual Dress Navy XL,Fashion,Dresses,118.45,41.46,SUP-IMPORT-01,100,14,True,True,2025-08-03 12:04:49,B,fast
+81,FASH-SH-081,Boots Purple S,Fashion,Shoes,115.07,40.27,SUP-BEAUTY-01,150,16,True,False,2024-12-02 12:04:49,B,slow
+82,FASH-SH-082,Sneakers Purple S,Fashion,Shoes,59.68,20.89,SUP-HOME-01,75,11,True,True,2025-01-21 12:04:49,C,medium
+83,FASH-SH-083,Loafers Black XL,Fashion,Shoes,142.73,49.96,SUP-BEAUTY-01,50,8,True,True,2023-11-23 12:04:49,B,medium
+84,FASH-SH-084,Sandals Purple L,Fashion,Shoes,121.01,42.35,SUP-FASHION-02,75,8,True,False,2023-12-21 12:04:49,B,fast
+85,FASH-SH-085,Loafers Gray L,Fashion,Shoes,87.49,30.62,SUP-DIRECT-01,100,12,True,True,2025-01-26 12:04:49,B,medium
+86,FASH-SH-086,Boots Green S,Fashion,Shoes,26.89,9.41,SUP-TECH-02,75,10,True,True,2023-11-24 12:04:49,C,medium
+87,FASH-SH-087,Sneakers Red S,Fashion,Shoes,113.4,39.69,SUP-DIRECT-01,150,11,True,True,2025-04-15 12:04:49,B,slow
+88,FASH-SH-088,Boots Red M,Fashion,Shoes,35.12,12.29,SUP-FASHION-01,150,7,True,True,2024-04-12 12:04:49,C,medium
+89,FASH-SH-089,Boots Blue XXL,Fashion,Shoes,131.58,46.05,SUP-TECH-01,30,14,True,False,2024-08-05 12:04:49,B,slow
+90,FASH-SH-090,Boots Blue XS,Fashion,Shoes,45.35,15.87,SUP-TECH-02,100,20,True,False,2025-08-16 12:04:49,C,medium
+91,FASH-AC-091,Wallet Black S,Fashion,Accessories,30.89,10.81,SUP-TECH-02,75,16,True,False,2024-08-30 12:04:49,C,fast
+92,FASH-AC-092,Wallet Navy XL,Fashion,Accessories,41.6,14.56,SUP-GLOBAL-01,100,15,True,False,2024-03-07 12:04:49,C,slow
+93,FASH-AC-093,Sunglasses Green XL,Fashion,Accessories,96.94,33.93,SUP-FASHION-02,30,16,True,False,2025-08-08 12:04:49,B,slow
+94,FASH-AC-094,Scarf Red S,Fashion,Accessories,87.28,30.55,SUP-BEAUTY-01,30,9,True,False,2025-01-05 12:04:49,B,medium
+95,FASH-AC-095,Belt Red M,Fashion,Accessories,108.97,38.14,SUP-TECH-02,100,18,True,True,2024-01-29 12:04:49,B,slow
+96,FASH-AC-096,Wallet Red L,Fashion,Accessories,26.07,9.12,SUP-HOME-01,50,10,True,False,2025-05-14 12:04:49,C,medium
+97,FASH-AC-097,Hat Navy XXL,Fashion,Accessories,125.39,43.89,SUP-GLOBAL-01,75,21,True,False,2023-11-14 12:04:49,B,medium
+98,FASH-AC-098,Sunglasses Green XL,Fashion,Accessories,85.6,29.96,SUP-IMPORT-01,30,14,False,False,2024-12-04 12:04:49,B,medium
+99,FASH-AC-099,Wallet Green XS,Fashion,Accessories,22.79,7.98,SUP-IMPORT-01,150,17,True,True,2023-12-12 12:04:49,C,fast
+100,FASH-AC-100,Hat Navy XS,Fashion,Accessories,116.84,40.89,SUP-DIRECT-01,100,9,True,True,2025-04-28 12:04:49,B,fast
+101,HOME-KI-101,Utensil Set,Home,Kitchen,91.69,36.68,SUP-GLOBAL-01,30,25,True,False,2024-11-23 12:04:49,B,fast
+102,HOME-KI-102,Mixing Bowl,Home,Kitchen,136.67,54.67,SUP-BEAUTY-01,75,15,True,False,2025-01-08 12:04:49,B,medium
+103,HOME-KI-103,Storage Container,Home,Kitchen,164.2,65.68,SUP-GLOBAL-01,30,27,True,False,2025-02-14 12:04:49,A,medium
+104,HOME-KI-104,Mixing Bowl,Home,Kitchen,30.26,12.1,SUP-TECH-01,150,22,True,False,2024-04-23 12:04:49,C,medium
+105,HOME-KI-105,Storage Container,Home,Kitchen,87.34,34.94,SUP-SPORTS-01,150,16,True,False,2024-06-07 12:04:49,B,slow
+106,HOME-KI-106,Storage Container,Home,Kitchen,153.92,61.57,SUP-DIRECT-01,75,16,True,False,2025-01-09 12:04:49,A,medium
+107,HOME-KI-107,Storage Container,Home,Kitchen,177.12,70.85,SUP-TECH-01,30,25,True,False,2024-02-15 12:04:49,A,medium
+108,HOME-KI-108,Cutting Board,Home,Kitchen,144.28,57.71,SUP-TECH-01,150,19,True,False,2025-07-27 12:04:49,A,slow
+109,HOME-KI-109,Cutting Board,Home,Kitchen,198.51,79.4,SUP-TECH-02,100,13,True,False,2025-05-26 12:04:49,A,medium
+110,HOME-KI-110,Storage Container,Home,Kitchen,187.07,74.83,SUP-HOME-01,150,19,True,False,2024-06-23 12:04:49,A,fast
+111,HOME-BE-111,Throw Blanket,Home,Bedroom,54.8,21.92,SUP-BEAUTY-01,50,27,True,False,2024-02-25 12:04:49,C,medium
+112,HOME-BE-112,Mattress Pad,Home,Bedroom,151.29,60.52,SUP-HOME-01,30,14,True,False,2024-09-01 12:04:49,A,fast
+113,HOME-BE-113,Comforter,Home,Bedroom,187.38,74.95,SUP-TECH-01,75,26,True,False,2024-12-29 12:04:49,A,slow
+114,HOME-BE-114,Mattress Pad,Home,Bedroom,119.35,47.74,SUP-GLOBAL-01,50,25,True,False,2024-11-11 12:04:49,B,slow
+115,HOME-BE-115,Comforter,Home,Bedroom,113.97,45.59,SUP-GLOBAL-01,100,27,True,False,2025-04-20 12:04:49,B,medium
+116,HOME-BE-116,Bed Sheet Set,Home,Bedroom,117.79,47.12,SUP-TECH-01,100,17,True,False,2024-07-03 12:04:49,B,slow
+117,HOME-BE-117,Throw Blanket,Home,Bedroom,82.13,32.85,SUP-GLOBAL-01,50,30,True,False,2025-06-23 12:04:49,B,slow
+118,HOME-BE-118,Mattress Pad,Home,Bedroom,193.35,77.34,SUP-GLOBAL-01,30,20,True,False,2024-07-20 12:04:49,A,fast
+119,HOME-BE-119,Pillow,Home,Bedroom,146.71,58.68,SUP-TECH-02,50,23,True,False,2025-02-01 12:04:49,A,slow
+120,HOME-BE-120,Comforter,Home,Bedroom,127.67,51.07,SUP-SPORTS-01,30,22,True,False,2024-05-02 12:04:49,B,medium
+121,HOME-BA-121,Soap Dispenser,Home,Bath,191.19,76.48,SUP-DIRECT-01,100,30,False,False,2025-08-21 12:04:49,A,slow
+122,HOME-BA-122,Shower Curtain,Home,Bath,129.18,51.67,SUP-TECH-02,50,19,True,False,2025-07-22 12:04:49,B,slow
+123,HOME-BA-123,Towel Set,Home,Bath,93.19,37.28,SUP-TECH-01,30,19,True,False,2025-09-03 12:04:49,B,medium
+124,HOME-BA-124,Bath Mat,Home,Bath,76.82,30.73,SUP-FASHION-02,50,23,True,False,2024-03-30 12:04:49,B,fast
+125,HOME-BA-125,Shower Curtain,Home,Bath,40.64,16.26,SUP-BEAUTY-01,150,12,True,False,2025-02-26 12:04:49,C,medium
+126,HOME-BA-126,Soap Dispenser,Home,Bath,183.26,73.3,SUP-GLOBAL-01,50,14,True,False,2024-07-17 12:04:49,A,medium
+127,HOME-BA-127,Bath Mat,Home,Bath,136.03,54.41,SUP-DIRECT-01,75,24,True,False,2024-08-04 12:04:49,B,slow
+128,HOME-BA-128,Bath Mat,Home,Bath,197.63,79.05,SUP-HOME-01,100,19,True,False,2024-12-25 12:04:49,A,slow
+129,HOME-BA-129,Shower Curtain,Home,Bath,199.88,79.95,SUP-FASHION-02,30,25,True,False,2024-10-28 12:04:49,A,fast
+130,HOME-BA-130,Storage Caddy,Home,Bath,64.81,25.92,SUP-BEAUTY-01,30,19,True,False,2024-03-30 12:04:49,C,medium
+131,HOME-DE-131,Wall Art,Home,Decor,182.84,73.14,SUP-FASHION-02,75,25,True,False,2024-11-04 12:04:49,A,medium
+132,HOME-DE-132,Picture Frame,Home,Decor,130.23,52.09,SUP-FASHION-01,75,29,True,False,2024-01-27 12:04:49,B,medium
+133,HOME-DE-133,Wall Art,Home,Decor,67.32,26.93,SUP-IMPORT-01,30,24,True,False,2025-06-18 12:04:49,C,fast
+134,HOME-DE-134,Wall Art,Home,Decor,182.65,73.06,SUP-FASHION-01,100,20,True,False,2024-04-26 12:04:49,A,medium
+135,HOME-DE-135,Vase,Home,Decor,109.92,43.97,SUP-HOME-01,50,18,True,False,2024-06-24 12:04:49,B,slow
+136,HOME-DE-136,Vase,Home,Decor,151.34,60.54,SUP-GLOBAL-01,30,20,True,False,2025-06-08 12:04:49,A,medium
+137,HOME-DE-137,Picture Frame,Home,Decor,173.15,69.26,SUP-SPORTS-01,150,22,True,False,2024-09-21 12:04:49,A,medium
+138,HOME-DE-138,Wall Art,Home,Decor,58.78,23.51,SUP-SPORTS-01,100,13,True,False,2023-12-12 12:04:49,C,slow
+139,HOME-DE-139,Vase,Home,Decor,120.24,48.1,SUP-TECH-02,75,30,True,False,2024-07-05 12:04:49,B,medium
+140,HOME-DE-140,Wall Art,Home,Decor,126.95,50.78,SUP-IMPORT-01,75,27,True,False,2025-08-27 12:04:49,B,slow
+141,HOME-ST-141,Closet System,Home,Storage,182.6,73.04,SUP-TECH-02,100,19,True,False,2025-09-22 12:04:49,A,slow
+142,HOME-ST-142,Shelving Unit,Home,Storage,199.22,79.69,SUP-FASHION-02,30,13,True,False,2025-06-14 12:04:49,A,medium
+143,HOME-ST-143,Closet System,Home,Storage,95.1,38.04,SUP-IMPORT-01,100,27,True,False,2025-05-25 12:04:49,B,medium
+144,HOME-ST-144,Closet System,Home,Storage,133.75,53.5,SUP-BEAUTY-01,150,25,True,False,2025-01-17 12:04:49,B,medium
+145,HOME-ST-145,Storage Bin,Home,Storage,140.53,56.21,SUP-GLOBAL-01,100,16,True,False,2024-10-24 12:04:49,B,medium
+146,HOME-ST-146,Storage Bin,Home,Storage,196.34,78.54,SUP-SPORTS-01,150,21,True,False,2025-01-21 12:04:49,A,fast
+147,HOME-ST-147,Organizer,Home,Storage,193.9,77.56,SUP-FASHION-02,30,24,True,False,2024-02-27 12:04:49,A,medium
+148,HOME-ST-148,Storage Bin,Home,Storage,17.71,7.08,SUP-FASHION-01,50,20,True,False,2025-04-03 12:04:49,C,medium
+149,HOME-ST-149,Storage Bin,Home,Storage,167.33,66.93,SUP-IMPORT-01,50,27,True,False,2025-03-06 12:04:49,A,fast
+150,HOME-ST-150,Shelving Unit,Home,Storage,156.68,62.67,SUP-HOME-01,30,29,True,False,2025-06-04 12:04:49,A,medium
+151,SPOR-FI-151,Resistance Bands,Sports,Fitness,167.58,70.38,SUP-TECH-02,50,19,True,False,2025-10-15 12:04:49,A,slow
+152,SPOR-FI-152,Dumbbells,Sports,Fitness,239.52,100.6,SUP-SPORTS-01,150,10,False,False,2025-06-23 12:04:49,A,medium
+153,SPOR-FI-153,Exercise Ball,Sports,Fitness,163.51,68.67,SUP-GLOBAL-01,30,18,True,False,2024-03-02 12:04:49,A,fast
+154,SPOR-FI-154,Yoga Mat,Sports,Fitness,142.18,59.72,SUP-TECH-01,150,10,True,True,2023-12-26 12:04:49,B,medium
+155,SPOR-FI-155,Jump Rope,Sports,Fitness,98.87,41.53,SUP-TECH-01,30,17,True,True,2024-08-20 12:04:49,B,slow
+156,SPOR-FI-156,Yoga Mat,Sports,Fitness,153.2,64.34,SUP-TECH-02,30,14,True,False,2025-06-23 12:04:49,A,medium
+157,SPOR-FI-157,Dumbbells,Sports,Fitness,191.8,80.56,SUP-SPORTS-01,150,16,True,False,2025-01-02 12:04:49,A,medium
+158,SPOR-FI-158,Exercise Ball,Sports,Fitness,157.6,66.19,SUP-TECH-02,30,13,True,False,2024-04-14 12:04:49,A,slow
+159,SPOR-FI-159,Resistance Bands,Sports,Fitness,135.86,57.06,SUP-SPORTS-01,100,10,True,False,2025-07-25 12:04:49,B,medium
+160,SPOR-FI-160,Dumbbells,Sports,Fitness,134.91,56.66,SUP-SPORTS-01,75,17,True,False,2024-07-02 12:04:49,B,slow
+161,SPOR-OU-161,Hiking Backpack,Sports,Outdoor,38.27,16.07,SUP-BEAUTY-01,30,8,True,True,2025-06-19 12:04:49,C,medium
+162,SPOR-OU-162,Flashlight,Sports,Outdoor,29.27,12.29,SUP-SPORTS-01,150,15,True,False,2023-12-19 12:04:49,C,medium
+163,SPOR-OU-163,Water Bottle,Sports,Outdoor,262.01,110.04,SUP-HOME-01,30,18,True,False,2024-03-18 12:04:49,A,medium
+164,SPOR-OU-164,Flashlight,Sports,Outdoor,73.27,30.77,SUP-FASHION-02,100,17,True,False,2024-04-09 12:04:49,B,medium
+165,SPOR-OU-165,Sleeping Bag,Sports,Outdoor,45.09,18.94,SUP-FASHION-02,150,11,True,True,2024-02-02 12:04:49,C,fast
+166,SPOR-OU-166,Flashlight,Sports,Outdoor,206.39,86.68,SUP-IMPORT-01,30,15,True,True,2025-01-30 12:04:49,A,slow
+167,SPOR-OU-167,Hiking Backpack,Sports,Outdoor,63.96,26.86,SUP-SPORTS-01,75,18,True,False,2025-06-06 12:04:49,C,medium
+168,SPOR-OU-168,Flashlight,Sports,Outdoor,201.32,84.55,SUP-TECH-01,50,8,True,False,2024-10-10 12:04:49,A,fast
+169,SPOR-OU-169,Water Bottle,Sports,Outdoor,142.65,59.91,SUP-HOME-01,75,9,True,True,2024-03-28 12:04:49,B,fast
+170,SPOR-OU-170,Flashlight,Sports,Outdoor,36.47,15.32,SUP-FASHION-01,50,7,True,False,2025-08-08 12:04:49,C,medium
+171,SPOR-TE-171,Volleyball,Sports,Team Sports,139.62,58.64,SUP-IMPORT-01,100,13,True,False,2024-05-24 12:04:49,B,medium
+172,SPOR-TE-172,Basketball,Sports,Team Sports,111.41,46.79,SUP-IMPORT-01,75,8,True,False,2025-09-14 12:04:49,B,fast
+173,SPOR-TE-173,Soccer Ball,Sports,Team Sports,125.84,52.85,SUP-TECH-01,30,16,True,True,2025-06-12 12:04:49,B,medium
+174,SPOR-TE-174,Volleyball,Sports,Team Sports,95.36,40.05,SUP-GLOBAL-01,30,8,True,False,2024-10-06 12:04:49,B,medium
+175,SPOR-TE-175,Tennis Racket,Sports,Team Sports,214.66,90.16,SUP-SPORTS-01,150,15,True,True,2025-09-17 12:04:49,A,medium
+176,SPOR-TE-176,Baseball Glove,Sports,Team Sports,17.4,7.31,SUP-IMPORT-01,75,8,True,False,2024-01-14 12:04:49,C,fast
+177,SPOR-TE-177,Baseball Glove,Sports,Team Sports,95.38,40.06,SUP-SPORTS-01,30,13,True,True,2024-07-16 12:04:49,B,medium
+178,SPOR-TE-178,Volleyball,Sports,Team Sports,37.38,15.7,SUP-FASHION-02,30,20,True,False,2025-08-11 12:04:49,C,medium
+179,SPOR-TE-179,Baseball Glove,Sports,Team Sports,262.71,110.34,SUP-FASHION-02,75,18,True,False,2024-05-26 12:04:49,A,slow
+180,SPOR-TE-180,Basketball,Sports,Team Sports,164.81,69.22,SUP-SPORTS-01,75,10,True,True,2025-06-01 12:04:49,A,fast
+181,SPOR-WA-181,Snorkel Set,Sports,Water Sports,41.61,17.48,SUP-FASHION-01,50,11,True,True,2023-12-29 12:04:49,C,medium
+182,SPOR-WA-182,Swim Goggles,Sports,Water Sports,63.02,26.47,SUP-GLOBAL-01,100,19,True,True,2024-07-28 12:04:49,C,fast
+183,SPOR-WA-183,Diving Mask,Sports,Water Sports,197.18,82.82,SUP-SPORTS-01,75,16,True,False,2024-08-04 12:04:49,A,slow
+184,SPOR-WA-184,Life Jacket,Sports,Water Sports,241.34,101.36,SUP-SPORTS-01,30,16,True,False,2024-07-25 12:04:49,A,slow
+185,SPOR-WA-185,Swim Goggles,Sports,Water Sports,28.38,11.92,SUP-TECH-02,75,20,True,True,2025-07-30 12:04:49,C,medium
+186,SPOR-WA-186,Diving Mask,Sports,Water Sports,183.09,76.9,SUP-IMPORT-01,100,13,True,True,2025-09-18 12:04:49,A,medium
+187,SPOR-WA-187,Pool Float,Sports,Water Sports,273.81,115.0,SUP-SPORTS-01,50,16,True,False,2025-08-28 12:04:49,A,slow
+188,SPOR-WA-188,Pool Float,Sports,Water Sports,41.81,17.56,SUP-TECH-02,75,20,True,False,2025-02-19 12:04:49,C,medium
+189,SPOR-WA-189,Pool Float,Sports,Water Sports,297.4,124.91,SUP-IMPORT-01,150,15,True,False,2025-01-14 12:04:49,A,medium
+190,SPOR-WA-190,Pool Float,Sports,Water Sports,129.73,54.49,SUP-TECH-01,150,12,True,False,2025-08-24 12:04:49,B,medium
+191,SPOR-YO-191,Meditation Cushion,Sports,Yoga,39.22,16.47,SUP-HOME-01,100,17,True,True,2024-02-21 12:04:49,C,fast
+192,SPOR-YO-192,Yoga Strap,Sports,Yoga,108.01,45.36,SUP-SPORTS-01,50,16,True,False,2023-12-22 12:04:49,B,slow
+193,SPOR-YO-193,Foam Roller,Sports,Yoga,49.14,20.64,SUP-HOME-01,30,18,True,False,2024-11-28 12:04:49,C,slow
+194,SPOR-YO-194,Yoga Strap,Sports,Yoga,204.99,86.1,SUP-TECH-02,150,20,True,False,2024-10-25 12:04:49,A,medium
+195,SPOR-YO-195,Yoga Block,Sports,Yoga,116.43,48.9,SUP-SPORTS-01,50,9,True,False,2025-03-13 12:04:49,B,medium
+196,SPOR-YO-196,Yoga Strap,Sports,Yoga,56.62,23.78,SUP-DIRECT-01,30,11,True,True,2024-05-09 12:04:49,C,medium
+197,SPOR-YO-197,Yoga Block,Sports,Yoga,202.64,85.11,SUP-FASHION-01,150,19,True,False,2025-04-28 12:04:49,A,slow
+198,SPOR-YO-198,Exercise Mat,Sports,Yoga,245.0,102.9,SUP-TECH-01,100,9,True,False,2025-03-01 12:04:49,A,slow
+199,SPOR-YO-199,Foam Roller,Sports,Yoga,187.85,78.9,SUP-FASHION-02,100,19,True,False,2024-07-07 12:04:49,A,slow
+200,SPOR-YO-200,Yoga Strap,Sports,Yoga,117.94,49.53,SUP-GLOBAL-01,100,16,True,True,2024-06-03 12:04:49,B,slow
+201,BEAU-SK-201,Eye Cream,Beauty,Skincare,53.15,15.94,SUP-IMPORT-01,50,7,True,False,2025-02-16 12:04:49,C,medium
+202,BEAU-SK-202,Face Cream,Beauty,Skincare,78.74,23.62,SUP-TECH-02,150,10,True,False,2024-05-20 12:04:49,B,fast
+203,BEAU-SK-203,Face Cream,Beauty,Skincare,37.78,11.33,SUP-GLOBAL-01,75,7,True,False,2025-06-02 12:04:49,C,fast
+204,BEAU-SK-204,Moisturizer,Beauty,Skincare,15.55,4.67,SUP-SPORTS-01,100,8,True,False,2024-09-01 12:04:49,C,slow
+205,BEAU-SK-205,Face Cream,Beauty,Skincare,50.59,15.18,SUP-BEAUTY-01,50,10,True,False,2024-10-12 12:04:49,C,medium
+206,BEAU-SK-206,Cleanser,Beauty,Skincare,8.24,2.47,SUP-FASHION-01,75,6,True,False,2025-01-10 12:04:49,C,fast
+207,BEAU-SK-207,Moisturizer,Beauty,Skincare,85.05,25.51,SUP-GLOBAL-01,100,7,True,False,2025-08-10 12:04:49,B,fast
+208,BEAU-SK-208,Face Cream,Beauty,Skincare,34.43,10.33,SUP-IMPORT-01,150,7,True,False,2025-07-09 12:04:49,C,medium
+209,BEAU-SK-209,Serum,Beauty,Skincare,32.33,9.7,SUP-FASHION-02,30,6,True,False,2024-02-01 12:04:49,C,fast
+210,BEAU-SK-210,Moisturizer,Beauty,Skincare,12.22,3.67,SUP-DIRECT-01,150,12,False,False,2024-05-21 12:04:49,C,fast
+211,BEAU-MA-211,Blush,Beauty,Makeup,32.82,9.85,SUP-BEAUTY-01,75,7,False,False,2024-11-03 12:04:49,C,medium
+212,BEAU-MA-212,Foundation,Beauty,Makeup,70.63,21.19,SUP-DIRECT-01,30,7,True,False,2025-08-22 12:04:49,C,medium
+213,BEAU-MA-213,Blush,Beauty,Makeup,67.57,20.27,SUP-TECH-01,150,13,True,False,2024-07-06 12:04:49,C,medium
+214,BEAU-MA-214,Lipstick,Beauty,Makeup,78.1,23.43,SUP-TECH-01,75,10,True,False,2025-08-22 12:04:49,B,medium
+215,BEAU-MA-215,Mascara,Beauty,Makeup,32.73,9.82,SUP-IMPORT-01,30,15,True,False,2024-11-24 12:04:49,C,slow
+216,BEAU-MA-216,Foundation,Beauty,Makeup,10.1,3.03,SUP-FASHION-01,75,13,True,False,2023-11-29 12:04:49,C,medium
+217,BEAU-MA-217,Eyeshadow Palette,Beauty,Makeup,117.79,35.34,SUP-FASHION-01,50,12,True,False,2024-07-19 12:04:49,B,medium
+218,BEAU-MA-218,Lipstick,Beauty,Makeup,38.75,11.62,SUP-TECH-01,50,5,True,False,2024-12-17 12:04:49,C,slow
+219,BEAU-MA-219,Blush,Beauty,Makeup,50.8,15.24,SUP-HOME-01,100,13,False,False,2024-01-07 12:04:49,C,medium
+220,BEAU-MA-220,Foundation,Beauty,Makeup,37.9,11.37,SUP-HOME-01,75,5,True,False,2024-10-19 12:04:49,C,slow
+221,BEAU-HA-221,Styling Gel,Beauty,Haircare,107.29,32.19,SUP-SPORTS-01,100,12,True,False,2024-06-09 12:04:49,B,medium
+222,BEAU-HA-222,Styling Gel,Beauty,Haircare,47.24,14.17,SUP-TECH-02,75,13,True,False,2025-08-11 12:04:49,C,medium
+223,BEAU-HA-223,Styling Gel,Beauty,Haircare,74.28,22.28,SUP-HOME-01,150,7,True,False,2025-08-10 12:04:49,B,fast
+224,BEAU-HA-224,Hair Mask,Beauty,Haircare,81.01,24.3,SUP-IMPORT-01,100,9,True,False,2025-05-13 12:04:49,B,medium
+225,BEAU-HA-225,Styling Gel,Beauty,Haircare,45.43,13.63,SUP-IMPORT-01,75,5,True,False,2025-01-22 12:04:49,C,medium
+226,BEAU-HA-226,Shampoo,Beauty,Haircare,13.63,4.09,SUP-SPORTS-01,100,15,True,False,2023-12-05 12:04:49,C,medium
+227,BEAU-HA-227,Conditioner,Beauty,Haircare,114.57,34.37,SUP-GLOBAL-01,150,7,False,False,2025-08-23 12:04:49,B,slow
+228,BEAU-HA-228,Conditioner,Beauty,Haircare,94.53,28.36,SUP-BEAUTY-01,75,10,True,False,2025-09-27 12:04:49,B,medium
+229,BEAU-HA-229,Hair Oil,Beauty,Haircare,22.65,6.79,SUP-SPORTS-01,75,12,True,False,2025-08-13 12:04:49,C,slow
+230,BEAU-HA-230,Hair Oil,Beauty,Haircare,20.83,6.25,SUP-SPORTS-01,100,10,True,False,2025-02-17 12:04:49,C,medium
+231,BEAU-FR-231,Perfume,Beauty,Fragrance,7.98,2.39,SUP-DIRECT-01,100,7,True,False,2024-04-03 12:04:49,C,slow
+232,BEAU-FR-232,Perfume,Beauty,Fragrance,35.1,10.53,SUP-FASHION-02,100,9,True,False,2025-01-11 12:04:49,C,medium
+233,BEAU-FR-233,Room Spray,Beauty,Fragrance,28.02,8.41,SUP-GLOBAL-01,30,7,True,False,2023-10-31 12:04:49,C,medium
+234,BEAU-FR-234,Room Spray,Beauty,Fragrance,119.69,35.91,SUP-SPORTS-01,75,15,True,False,2024-04-15 12:04:49,B,medium
+235,BEAU-FR-235,Scented Candle,Beauty,Fragrance,38.39,11.52,SUP-FASHION-01,50,9,True,False,2024-05-28 12:04:49,C,fast
+236,BEAU-FR-236,Body Spray,Beauty,Fragrance,18.96,5.69,SUP-FASHION-02,50,8,True,False,2025-10-04 12:04:49,C,slow
+237,BEAU-FR-237,Cologne,Beauty,Fragrance,68.71,20.61,SUP-DIRECT-01,100,10,True,False,2025-08-03 12:04:49,C,medium
+238,BEAU-FR-238,Perfume,Beauty,Fragrance,40.57,12.17,SUP-BEAUTY-01,150,12,True,False,2024-03-21 12:04:49,C,fast
+239,BEAU-FR-239,Perfume,Beauty,Fragrance,19.41,5.82,SUP-GLOBAL-01,30,10,True,False,2024-05-19 12:04:49,C,medium
+240,BEAU-FR-240,Cologne,Beauty,Fragrance,19.76,5.93,SUP-FASHION-01,150,13,True,False,2025-06-20 12:04:49,C,fast
+241,BEAU-TO-241,Curling Iron,Beauty,Tools,62.83,18.85,SUP-DIRECT-01,30,5,True,False,2025-05-15 12:04:49,C,slow
+242,BEAU-TO-242,Hair Dryer,Beauty,Tools,42.11,12.63,SUP-DIRECT-01,75,8,True,False,2025-08-11 12:04:49,C,slow
+243,BEAU-TO-243,Flat Iron,Beauty,Tools,27.57,8.27,SUP-FASHION-01,75,13,True,False,2024-02-09 12:04:49,C,slow
+244,BEAU-TO-244,Nail Kit,Beauty,Tools,15.74,4.72,SUP-IMPORT-01,50,15,True,False,2025-05-26 12:04:49,C,medium
+245,BEAU-TO-245,Hair Dryer,Beauty,Tools,80.75,24.22,SUP-IMPORT-01,75,14,False,False,2025-10-01 12:04:49,B,fast
+246,BEAU-TO-246,Makeup Brush Set,Beauty,Tools,10.23,3.07,SUP-HOME-01,150,15,True,False,2024-03-24 12:04:49,C,slow
+247,BEAU-TO-247,Curling Iron,Beauty,Tools,76.08,22.82,SUP-DIRECT-01,100,5,True,False,2024-12-25 12:04:49,B,medium
+248,BEAU-TO-248,Curling Iron,Beauty,Tools,33.16,9.95,SUP-HOME-01,100,15,True,False,2023-11-25 12:04:49,C,slow
+249,BEAU-TO-249,Makeup Brush Set,Beauty,Tools,23.18,6.95,SUP-GLOBAL-01,100,11,True,False,2024-02-17 12:04:49,C,slow
+250,BEAU-TO-250,Hair Dryer,Beauty,Tools,40.95,12.29,SUP-BEAUTY-01,75,10,True,False,2024-10-16 12:04:49,C,slow
