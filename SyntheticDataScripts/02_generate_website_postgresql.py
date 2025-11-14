@@ -64,10 +64,10 @@ def load_master_products_from_adls():
 def generate_customers(num_customers):
     return [f"CUST-{i:05d}" for i in range(10000, 10000 + num_customers)]
 
-def generate_orders(df_products, customers, num_days):
+def generate_orders(df_products, customers, num_days,  start_order_counter=0, start_item_counter=0):
     orders, order_items = [], []
-    order_id_counter = 1
-    item_id_counter = 1
+    order_id_counter = start_order_counter + 1
+    item_id_counter = start_item_counter + 1
 
     active_products = df_products[df_products['is_active'] == True].copy()
     velocity_weights = {'fast': 5, 'medium': 2, 'slow': 1}
@@ -88,7 +88,7 @@ def generate_orders(df_products, customers, num_days):
             minute, second = random.randint(0,59), random.randint(0,59)
             order_time = current_date.replace(hour=hour, minute=minute, second=second)
 
-            order_id = f"WEB-{order_time.strftime('%Y%m%d')}-{order_id_counter:03d}"
+            order_id = f"WEB-{order_id_counter:06d}"
             customer_id = random.choice(customers)
             order_status = random.choices(['confirmed','processing','shipped','delivered','cancelled'],
                                           weights=[0.15,0.2,0.25,0.35,0.05])[0]
@@ -108,7 +108,9 @@ def generate_orders(df_products, customers, num_days):
                 else: fulfillment_status='fulfilled'
                 warehouse_allocated = random.choice(['WH-EAST-01','WH-WEST-02','WH-CENTRAL-03']) \
                                       if fulfillment_status in ['allocated','fulfilled'] else None
-                order_items.append((item_id_counter, order_id, product['sku'], product['product_name'],
+                order_item_id = f"ITEM-{item_id_counter:06d}"
+                order_items.append((order_item_id, order_id, product['sku'], product['product_name'],
+
                                     quantity, unit_price, discount, fulfillment_status,
                                     warehouse_allocated, order_time))
                 total_amount += (unit_price - discount) * quantity
@@ -128,9 +130,9 @@ def generate_orders(df_products, customers, num_days):
         'discount_applied','fulfillment_status','warehouse_allocated','created_at'
     ])
 
-def generate_inventory(df_products, df_order_items):
+def generate_inventory(df_products, df_order_items, start_inv_counter=0):
     inventory = []
-    inventory_id_counter = 1
+    inventory_id_counter = start_inv_counter + 1    
     reserved_by_sku = df_order_items[df_order_items['fulfillment_status'].isin(['pending','allocated'])]\
                         .groupby('sku')['quantity'].sum().to_dict()
     for _, product in df_products.iterrows():
@@ -142,8 +144,10 @@ def generate_inventory(df_products, df_order_items):
         if random.random()<0.05: available_qty=0
         elif random.random()<0.10: available_qty=random.randint(1,product['reorder_point'])
         else: available_qty=base_qty
-        inventory.append((inventory_id_counter, product['sku'], available_qty,
-                          int(reserved_qty), datetime.now()))
+        inventory_id = f"INV-{inventory_id_counter:06d}"
+        inventory.append((inventory_id, product['sku'], available_qty,
+                  int(reserved_qty), datetime.now()))
+
         inventory_id_counter += 1
     return pd.DataFrame(inventory, columns=[
         'inventory_id','sku','available_qty','reserved_qty','last_updated'
@@ -173,6 +177,45 @@ def insert_dataframe(conn, df, table_name):
     conn.commit()
     print(f"✅ Inserted {len(df)} rows into {table_name}")
 
+def insert_new_products(conn, df):
+    """Insert only new products that don't exist by SKU"""
+    if df.empty:
+        print(f"⚠️ No products to insert")
+        return
+    
+    cur = conn.cursor()
+    
+    # Get existing SKUs
+    cur.execute("SELECT sku FROM web_products")
+    existing_skus = set(row[0] for row in cur.fetchall())
+    
+    # Filter only new products
+    new_products = df[~df['sku'].isin(existing_skus)]
+    
+    if new_products.empty:
+        print(f"✅ No new products to insert (all {len(df)} products already exist)")
+        return
+    
+    # Insert new products
+    cols = ','.join(new_products.columns)
+    values = [tuple(x) for x in new_products.to_numpy()]
+    insert_query = f"INSERT INTO web_products ({cols}) VALUES %s"
+    execute_values(cur, insert_query, values)
+    conn.commit()
+    print(f"✅ Inserted {len(new_products)} new products (skipped {len(df) - len(new_products)} existing)")
+
+def get_last_counter(conn, table_name, id_column, timestamp_col):
+    """Get the last sequential counter from the most recent record"""
+    cur = conn.cursor()
+    
+    cur.execute(f"SELECT {id_column} FROM {table_name} ORDER BY {id_column} DESC LIMIT 1")
+    result = cur.fetchone()
+    
+    if result is None:
+        return 0
+    
+    # Extract number after prefix: "WEB-000001" -> 1
+    return int(result[0].split('-')[1])
 
 # ----------------------------------------------------
 # 4️⃣ Main
@@ -185,21 +228,34 @@ def main():
     # Load products
     df_products = load_master_products_from_adls()
 
+    # PostgreSQL connection and get last counters FIRST
+    conn = psycopg2.connect(PG_CONN_STR)
+    try:
+        last_order_counter = get_last_counter(conn, "web_orders", "order_id", "created_at")
+        last_item_counter = get_last_counter(conn, "web_order_items", "order_item_id", "created_at")
+        last_inv_counter = get_last_counter(conn, "web_inventory", "inventory_id", "last_updated")
+        print(f"📊 Starting from: Orders={last_order_counter}, Items={last_item_counter}, Inventory={last_inv_counter}")
+    except Exception as e:
+        print(f"⚠️ Error fetching counters (tables might be empty): {e}")
+        last_order_counter = 0
+        last_item_counter = 0
+        last_inv_counter = 0
+
+    # NOW generate data with the counters
     customers = generate_customers(NUM_CUSTOMERS)
-    df_orders, df_order_items = generate_orders(df_products, customers, NUM_DAYS)
-    df_inventory = generate_inventory(df_products, df_order_items)
+    df_orders, df_order_items = generate_orders(df_products, customers, NUM_DAYS, 
+                                                  last_order_counter, last_item_counter)
+    df_inventory = generate_inventory(df_products, df_order_items, last_inv_counter)
     df_products_table = generate_products_table(df_products)
 
-    # PostgreSQL insertion
-    conn = psycopg2.connect(PG_CONN_STR)
-    insert_dataframe(conn, df_products_table, "web_products")
+    # Insert data
+    insert_new_products(conn, df_products_table)
     insert_dataframe(conn, df_orders, "web_orders")
     insert_dataframe(conn, df_order_items, "web_order_items")
     insert_dataframe(conn, df_inventory, "web_inventory")
     conn.close()
 
     print("\n✅ Data generation and load complete!")
-
 
 if __name__ == "__main__":
     main()

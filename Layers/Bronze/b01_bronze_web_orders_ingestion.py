@@ -48,7 +48,7 @@ bronze_unclean_web_orders_df = (
                         spark.readStream   
                             .schema(bronze_web_orders_schema) \
                             .format("delta") \
-                            .table("db_uci_data_team_dev_wkspc.postgres_public.web_orders")
+                            .table("db_uci_data_team_dev_wkspc.azure_postgres_public.web_orders")
 )
 
 # COMMAND ----------
