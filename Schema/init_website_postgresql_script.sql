@@ -45,3 +45,19 @@ CREATE TABLE web_inventory (
     reserved_qty INT,
     last_updated TIMESTAMP
 );
+
+
+-- 🧩 Fix web_order_items
+ALTER TABLE web_order_items
+ALTER COLUMN order_item_id TYPE varchar(50) USING order_item_id::varchar;
+
+-- 🧩 Fix web_inventory
+ALTER TABLE web_inventory
+ALTER COLUMN inventory_id TYPE varchar(50) USING inventory_id::varchar;
+
+-- 🧩 Optional consistency: use VARCHAR for IDs everywhere
+ALTER TABLE web_products
+ALTER COLUMN product_id TYPE varchar(50) USING product_id::varchar;
+
+ALTER TABLE web_orders
+ALTER COLUMN order_id TYPE varchar(50) USING order_id::varchar;

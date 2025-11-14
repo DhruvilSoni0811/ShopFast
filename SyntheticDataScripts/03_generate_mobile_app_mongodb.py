@@ -132,6 +132,10 @@ def connect_to_mongodb():
         print("4. Check if cluster is active and not paused")
         raise RuntimeError(f"Could not connect to MongoDB: {e}")
 
+def ensure_indexes(db):
+    """Ensure unique indexes exist to prevent duplicates"""
+    db[COLLECTIONS["orders"]].create_index("order_id", unique=True)
+    print("✅ Ensured unique index on order_id")
 
 def batch_insert(collection, docs, batch_size=MONGO_BATCH_SIZE):
     """Insert docs in batches to avoid giant single insert for big lists."""
@@ -140,10 +144,34 @@ def batch_insert(collection, docs, batch_size=MONGO_BATCH_SIZE):
     inserted = 0
     for i in range(0, len(docs), batch_size):
         chunk = docs[i:i + batch_size]
-        collection.insert_many(chunk)
-        inserted += len(chunk)
+        try:
+            result = collection.insert_many(chunk, ordered = False)
+            inserted += len(result.inserted_ids)
+        except errors.BulkWriteError as e:
+            inserted += e.details['nInserted']
+            print(f"⚠️ BulkWriteError: {e.details}")
     return inserted
 
+def get_last_counters(db):
+    """Get the last sequential counters from the most recent records"""
+    counters = {
+        'order': 0,
+        'cart_event': 0,
+        'inventory': 0
+    }
+    
+    # Get last order counter
+    last_order = db[COLLECTIONS["orders"]].find_one(
+        sort=[("created_at", -1)]
+    )
+    if last_order and 'order_id' in last_order:
+        # Extract: "APP-20250115-001" -> 1
+        try:
+            counters['order'] = int(last_order['order_id'].split('-')[-1])
+        except (ValueError, IndexError):
+            counters['order'] = 0
+    
+    return counters
 
 # -------------------------
 # DATA GENERATION
@@ -167,11 +195,11 @@ def generate_app_customers(num_customers):
     return customers
 
 
-def generate_app_orders(df_products, customers, num_days):
+def generate_app_orders(df_products, customers, num_days, start_order_counter=0):
     """Return: (orders_list, flattened_order_items_list)"""
     orders = []
     order_items_flat = []
-    order_id_counter = 1
+    order_id_counter = start_order_counter + 1
 
     active_products = df_products[df_products['is_active'] == True].copy()
     if 'velocity_category' not in active_products.columns:
@@ -403,12 +431,24 @@ def main():
     # Load products from ADLS
     df_products = load_master_products_from_adls()
 
+    # Connect to MongoDB FIRST to get counters
+    db = connect_to_mongodb()
+    ensure_indexes(db) 
+    
+    # ✅ ADDED: Get last counters before generation
+    try:
+        counters = get_last_counters(db)
+        print(f"📊 Starting from: Orders={counters['order']}")
+    except Exception as e:
+        print(f"⚠️ Error fetching counters (collections might be empty): {e}")
+        counters = {'order': 0, 'cart_event': 0, 'inventory': 0}
+
     # Generate customers and data
     customers = generate_app_customers(NUM_APP_CUSTOMERS)
     print(f"👥 Generated {len(customers)} customers")
 
     print(f"🛍️ Generating mobile orders for {NUM_DAYS} days...")
-    orders, order_items_flat = generate_app_orders(df_products, customers, NUM_DAYS)
+    orders, order_items_flat = generate_app_orders(df_products, customers, NUM_DAYS, counters['order'])  # ✅ CHANGED: Pass counter
     print(f"✅ Generated {len(orders)} orders and {len(order_items_flat)} flattened order items")
 
     print("🛒 Generating cart events...")
@@ -419,15 +459,8 @@ def main():
     inventory_sync = generate_inventory_sync(df_products)
     print(f"✅ Generated inventory for {len(inventory_sync)} SKUs")
 
-    # Connect to MongoDB and insert
-    db = connect_to_mongodb()
-
-    print("\n📤 Clearing existing collections (for clean runs)...")
-    db[COLLECTIONS["orders"]].delete_many({})
-    db[COLLECTIONS["order_items"]].delete_many({})
-    db[COLLECTIONS["cart_events"]].delete_many({})
-    db[COLLECTIONS["inventory_sync"]].delete_many({})
-
+    # ✅ REMOVED: All deletion logic
+    
     print("📤 Inserting generated data into MongoDB (batched)...")
     inserted_orders = batch_insert(db[COLLECTIONS["orders"]], orders)
     inserted_items = batch_insert(db[COLLECTIONS["order_items"]], order_items_flat)
