@@ -1,10 +1,10 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Ingest Cart Events
+# MAGIC # Ingest App Inventory
 # MAGIC
 # MAGIC **Layer**: Bronze  
-# MAGIC **Target table(s)**: `bronze_app_cart_events`  
-# MAGIC **Description**: Add/remove events for inventory holds  
+# MAGIC **Target table(s)**: `bronze_app_inventory_sync`  
+# MAGIC **Description**: 30-min sync cycle  
 # MAGIC **Generated**: 2025-10-30 15:00:35
 
 # COMMAND ----------
@@ -86,7 +86,7 @@ app_inventory_df_flattened = app_inventory_df_parsed.select(
 # Example:
 # df.write #   .format("delta") #   .mode("append") #   .option("mergeSchema", "true") #   .saveAsTable("bronze_app_cart_events")
 
-target_app_inventory_df = "db_uci_data_team_dev_wkspc.shopfast.app_inventory_flattened"
+target_app_inventory_df = "db_uci_data_team_dev_wkspc.shopfast.bronze_app_inventory"
 app_inventory_df_flattened.write \
   .format("delta") \
   .mode("append") \
@@ -97,7 +97,7 @@ app_inventory_df_flattened.write \
 
 # MAGIC %sql
 # MAGIC
-# MAGIC select * from db_uci_data_team_dev_wkspc.shopfast.app_inventory_flattened
+# MAGIC select * from db_uci_data_team_dev_wkspc.shopfast.bronze_app_inventory
 
 # COMMAND ----------
 

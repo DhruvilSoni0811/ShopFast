@@ -124,7 +124,7 @@ app_order_df_flattened = app_order_df_parsed.select(
 # Example:
 # df.write #   .format("delta") #   .mode("append") #   .option("mergeSchema", "true") #   .saveAsTable("bronze_app_orders")
 
-target_app_order_df = "db_uci_data_team_dev_wkspc.shopfast.app_order_flattened"
+target_app_order_df = "db_uci_data_team_dev_wkspc.shopfast.bronze_app_orders"
 app_order_df_flattened.write \
     .format("delta") \
     .mode("append") \
@@ -135,7 +135,7 @@ app_order_df_flattened.write \
 
 # MAGIC %sql
 # MAGIC
-# MAGIC select * from db_uci_data_team_dev_wkspc.shopfast.app_order_flattened
+# MAGIC select * from db_uci_data_team_dev_wkspc.shopfast.bronze_app_orders
 
 # COMMAND ----------
 
