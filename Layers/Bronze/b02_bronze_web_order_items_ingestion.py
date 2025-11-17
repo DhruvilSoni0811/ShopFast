@@ -30,7 +30,7 @@ from delta.tables import DeltaTable
 # df = spark.read.format("...").load("...")
 
 bronze_web_order_items_schema = StructType([
-    StructField("order_item_id", LongType(), True),
+    StructField("order_item_id", StringType(), True),
     StructField("order_id", StringType(), True),
     StructField("sku", StringType(), True),
     StructField("product_name", StringType(), True),
@@ -48,7 +48,7 @@ bronze_unclean_web_order_items_df = (
     spark.readStream
         .schema(bronze_web_order_items_schema) \
             .format("delta") \
-            .table("db_uci_data_team_dev_wkspc.postgres_public.web_order_items")
+            .table("db_uci_data_team_dev_wkspc.azure_postgres_public.web_order_items")
 )
 
 # COMMAND ----------
@@ -92,7 +92,7 @@ bronze_with_metadata_df = bronze_unclean_web_order_items_df \
 )
 
 bronze_schemacontrolled_web_order_items_df = bronze_with_metadata_df.select(
-    F.col("order_item_id").cast("long"),
+    F.col("order_item_id").cast("string"),
     F.col("order_id").cast("string"),
     F.col("sku").cast("string"),
     F.col("product_name").cast("string"),
@@ -130,6 +130,7 @@ bronze_web_order_items_df = bronze_schemacontrolled_web_order_items_df.writeStre
     .option("checkpointLocation", "/mnt/checkpoints/bronze_web_order_items") \
       .outputMode("append") \
       .option("mergeSchema", "false") \
+      .trigger(availableNow=True) \
       .table("db_uci_data_team_dev_wkspc.shopfast.bronze_web_order_items")
 
 bronze_web_order_items_df.awaitTermination()
