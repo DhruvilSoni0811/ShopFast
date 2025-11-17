@@ -31,7 +31,7 @@ from pyspark.sql.types import StructType, StructField, IntegerType, StringType, 
 # df = spark.read.format("...").load("...")
 
 bronze_web_inventory_schema = StructType([
-    StructField("inventory_id", IntegerType(), True),
+    StructField("inventory_id", StringType(), True),
     StructField("sku", StringType(), True),
     StructField("available_qty", IntegerType(), True),
     StructField("reserved_qty", IntegerType(), True),
@@ -44,7 +44,7 @@ bronze_unclean_web_inventory_df = (
     spark.readStream
         .schema(bronze_web_inventory_schema) \
         .format("delta") \
-        .table("db_uci_data_team_dev_wkspc.postgres_public.web_inventory")
+        .table("db_uci_data_team_dev_wkspc.azure_postgres_public.web_inventory")
 )
 
 # COMMAND ----------
@@ -83,7 +83,7 @@ bronze_with_metadata_df = bronze_unclean_web_inventory_df \
 )
     
 bronze_schemacontrolled_web_inventory_df = bronze_with_metadata_df.select(
-    F.col("inventory_id").cast("long"),
+    F.col("inventory_id").cast("string"),
     F.col("sku").cast("string"),
     F.col("available_qty").cast("double"),
     F.col("reserved_qty").cast("double"),
@@ -102,6 +102,11 @@ bronze_schemacontrolled_web_inventory_df = bronze_with_metadata_df.select(
 
 # COMMAND ----------
 
+dbutils.fs.rm("/mnt/checkpoints/bronze_web_inventory", recurse=True)
+
+
+# COMMAND ----------
+
 # TODO: Write to Delta table
 # Example:
 # df.write #   .format("delta") #   .mode("append") #   .option("mergeSchema", "true") #   .saveAsTable("bronze_web_inventory")
@@ -111,6 +116,7 @@ bronze_web_inventory_df = bronze_schemacontrolled_web_inventory_df.writeStream \
     .option("checkpointLocation", "/mnt/checkpoints/bronze_web_inventory") \
     .outputMode("append") \
     .option("mergeSchema", "false") \
+    .trigger(availableNow=True) \
     .table("db_uci_data_team_dev_wkspc.shopfast.bronze_web_inventory")
 
 bronze_web_inventory_df.awaitTermination()

@@ -50,7 +50,7 @@ bronze_unclean_web_products_df = (
   spark.readStream
     .schema(bronze_web_products_schema) \
       .format("delta") \
-      .table("db_uci_data_team_dev_wkspc.postgres_public.web_products")
+      .table("db_uci_data_team_dev_wkspc.azure_postgres_public.web_products")
 )
 
 # COMMAND ----------
@@ -132,6 +132,7 @@ bronze_web_products_df = bronze_schemacontrolled_web_products_df.writeStream \
     .option("checkpointLocation", "/mnt/checkpoints/bronze_web_products") \
         .outputMode("append") \
         .option("mergeSchema", "false") \
+        .trigger(availableNow=True) \
         .table("db_uci_data_team_dev_wkspc.shopfast.bronze_web_products")
 
 bronze_web_products_df.awaitTermination()

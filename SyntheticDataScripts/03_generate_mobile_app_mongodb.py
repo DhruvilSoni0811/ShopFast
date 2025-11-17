@@ -241,7 +241,7 @@ def generate_app_orders(df_products, customers, num_days, start_order_counter=0)
             else:
                 selected_products = active_products.sample(n=num_items, replace=True)
 
-            items = []
+            # items = []
             total_amount = 0.0
 
             for _, product in selected_products.iterrows():
@@ -262,7 +262,7 @@ def generate_app_orders(df_products, customers, num_days, start_order_counter=0)
                     'color': color
                 }
                 order_items_flat.append(item_doc)
-
+                '''
                 items.append({
                     'sku': product.get('sku'),
                     'product_name': product.get('product_name'),
@@ -271,6 +271,7 @@ def generate_app_orders(df_products, customers, num_days, start_order_counter=0)
                     'size': size,
                     'color': color
                 })
+                '''
                 total_amount += unit_price * quantity
 
             payment_method = random.choices(['apple_pay', 'google_pay', 'credit_card', 'paypal'],
@@ -308,14 +309,11 @@ def generate_app_orders(df_products, customers, num_days, start_order_counter=0)
                 'device_type': random.choice(device_types),
                 'order_date': order_time,
                 'status': status,
-                'items': items,  # nested
-                'payment': {
-                    'method': payment['method'],
-                    'transaction_id': payment['transaction_id'],
-                    'amount': payment['amount'],
-                    'currency': payment['currency'],
-                    'status': payment['status']
-                },
+                # 'items': items,  # nested
+                'payment_method': payment['method'],
+                'payment_transaction_id': payment['transaction_id'],
+                'payment_amount': payment['amount'],
+                'payment_status': payment['status'],
                 'shipping_street': shipping['address']['street'],
                 'shipping_city': shipping['address']['city'],
                 'shipping_state': shipping['address']['state'],
