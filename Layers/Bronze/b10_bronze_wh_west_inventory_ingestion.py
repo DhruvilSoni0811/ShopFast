@@ -18,7 +18,10 @@ from pyspark.sql.functions import *
 from pyspark.sql.types import *
 from delta.tables import DeltaTable
 from dotenv import load_dotenv
-load_dotenv("../.env.development.local")
+from pathlib import Path
+
+env_path = Path("/Workspace/Users/dhruvil@uciny.com/ShopFast/.env.development.local")
+load_dotenv(env_path, override=True)
 import os
 
 storage_account = "stgaccshopfastcindres"
@@ -37,6 +40,11 @@ ADLS_ACCOUNT_KEY = os.getenv("ADLS_ACCOUNT_KEY")
 print("Loaded key:", ADLS_ACCOUNT_KEY)
 print("CWD:", os.getcwd())
 print("Env file exists:", os.path.isfile("../.env.development.local"))
+
+spark.conf.set(
+    f"fs.azure.account.key.{storage_account}.dfs.core.windows.net",
+    ADLS_ACCOUNT_KEY)
+
 
 # COMMAND ----------
 
@@ -118,7 +126,15 @@ west_wh_inventory_transformed_df = (
     .withColumn("lot_number", F.col("lot_number").cast("string"))
     .withColumn("warehouse_code", F.col("warehouse_code").cast("string"))
     .withColumn("file_generated_at", F.col("file_generated_at").cast("string"))
+    .withColumn("_source_system", lit("west_inventory"))
+    .withColumn("_ingestion_timestamp", current_timestamp())
+    .withColumn("_file_name", F.col("_metadata.file_name"))
+    .withColumn("_file_path", F.col("_metadata.file_path"))
 )
+
+# COMMAND ----------
+
+west_wh_inventory_transformed_df.display()
 
 # COMMAND ----------
 

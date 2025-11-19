@@ -62,18 +62,27 @@ app_inventory_df_parsed = nested_app_inventory_df.withColumn("parsed_data", from
 
 # COMMAND ----------
 
-app_inventory_df_flattened = app_inventory_df_parsed.select(
-  col("_id").alias("fivetran_id"),
-  col("_fivetran_synced"),
-  col("_fivetran_deleted"),
-  col("parsed_data._id").alias("order_inventory_id"),
+app_inventory_df_flattened = (app_inventory_df_parsed.select(
+  col("_id"),
   col("parsed_data.sku"),
   col("parsed_data.available_quantity"),
   col("parsed_data.display_status"),
   col("parsed_data.last_synced"),
   col("parsed_data.source_warehouse"),
-  col("parsed_data.estimated_delivery")
+  col("parsed_data.estimated_delivery"),
+  col("_fivetran_deleted")
 )
+.withColumn("_source_system", lit("mobile_application"))
+.withColumn("_ingestion_timestamp", current_timestamp())
+.withColumn("_mongodb_operation", when(col("_fivetran_deleted") == True, lit("delete"))
+.otherwise(lit("upsert"))                              
+)
+.drop("_fivetran_deleted")
+)
+
+# COMMAND ----------
+
+app_inventory_df_flattened.display()
 
 # COMMAND ----------
 

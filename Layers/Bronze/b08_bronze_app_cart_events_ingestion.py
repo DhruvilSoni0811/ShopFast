@@ -64,20 +64,34 @@ app_cart_events_df_parsed = nested_app_cart_events_df.withColumn("parsed_data", 
 
 # COMMAND ----------
 
-app_cart_events_df_flattened = app_cart_events_df_parsed.select(
-    col("_id").alias("fivetran_id"),
-    col("_fivetran_synced"),
-    col("_fivetran_deleted"),
-    col("parsed_data._id").alias("cart_id"),
-    col("parsed_data.event_type"),
-    col("parsed_data.customer_id"),
-    col("parsed_data.session_id"),
-    col("parsed_data.sku"),
-    col("parsed_data.quantity"),
-    col("parsed_data.timestamp"),
-    col("parsed_data.inventory_reserved"),
-    col("parsed_data.expires_at")
+app_cart_events_df_flattened = (
+    app_cart_events_df_parsed
+    .select(
+        col("_id"),
+        col("parsed_data.event_type"),
+        col("parsed_data.customer_id"),
+        col("parsed_data.session_id"),
+        col("parsed_data.sku"),
+        col("parsed_data.quantity"),
+        col("parsed_data.timestamp"),
+        col("parsed_data.inventory_reserved"),
+        col("parsed_data.expires_at"),
+        col("_fivetran_deleted")    # required for operation logic
+    )
+    .withColumn("_source_system", lit("mobile_application"))
+    .withColumn("_ingestion_timestamp", current_timestamp())
+    .withColumn(
+        "_mongodb_operation",
+        when(col("_fivetran_deleted") == True, lit("delete"))
+        .otherwise(lit("upsert"))
+    )
+    .drop("_fivetran_deleted")   # optional if you don’t want it in bronze
 )
+
+
+# COMMAND ----------
+
+app_cart_events_df_flattened.display()
 
 # COMMAND ----------
 

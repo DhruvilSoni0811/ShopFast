@@ -69,11 +69,8 @@ app_order_items_df_parsed.display()
 
 # COMMAND ----------
 
-app_order_items_df_flattened = app_order_items_df_parsed.select(
-    col("_id").alias("fivetran_id"),
-    col("_fivetran_synced"),
-    col("_fivetran_deleted"),
-    col("parsed_data._id").alias("order_items_record_id"),
+app_order_items_df_flattened = (app_order_items_df_parsed.select(
+    col("_id"),
     col("parsed_data.order_id"),
     col("parsed_data.sku"),
     col("parsed_data.product_name"),
@@ -82,6 +79,10 @@ app_order_items_df_flattened = app_order_items_df_parsed.select(
     col("parsed_data.size"),
     col("parsed_data.color")
 )
+.withColumn("_source_system", lit("mobile_application"))
+.withColumn("_ingestion_timestamp", current_timestamp())
+)
+
 
 # COMMAND ----------
 
