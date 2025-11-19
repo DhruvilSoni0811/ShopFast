@@ -84,11 +84,10 @@ app_order_df_parsed.display()
 
 # COMMAND ----------
 
-app_order_df_flattened = app_order_df_parsed.select(
-    col("_id").alias("fivetran_id"),
-    col("_fivetran_synced"),
+app_order_df_flattened = (
+    app_order_df_parsed.select(
+    col("_id"),
     col("_fivetran_deleted"),
-    col("parsed_data._id").alias("order_record_id"),
     col("parsed_data.order_id"),
     col("parsed_data.customer_id"),
     col("parsed_data.customer_name"),
@@ -112,6 +111,15 @@ app_order_df_flattened = app_order_df_parsed.select(
     to_timestamp(col("parsed_data.created_at")).alias("created_at"),
     to_timestamp(col("parsed_data.updated_at")).alias("updated_at")
 )
+.withColumn("_source_system", lit("mobile_application"))
+.withColumn("_mongodb_ooperation", when(col("_fivetran_deleted") == True, lit("delete"))
+            .otherwise(lit("upsert")))
+.drop("_fivetran_deleted")
+)
+
+# COMMAND ----------
+
+app_order_df_flattened.display()
 
 # COMMAND ----------
 

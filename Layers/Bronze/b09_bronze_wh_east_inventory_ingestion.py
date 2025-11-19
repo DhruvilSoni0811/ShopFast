@@ -42,6 +42,10 @@ print("Loaded key:", ADLS_ACCOUNT_KEY)
 print("CWD:", os.getcwd())
 print("Env file exists:", os.path.isfile("../.env.development.local"))
 
+spark.conf.set(
+    f"fs.azure.account.key.{storage_account}.dfs.core.windows.net",
+    ADLS_ACCOUNT_KEY)
+
 
 # COMMAND ----------
 
@@ -122,7 +126,16 @@ east_wh_inventory_transformed_df = (
         .withColumn("last_counter_date", F.col("last_counter_date").cast("date"))
         .withColumn("batch_number", F.col("batch_number").cast("string"))
         .withColumn("expiry_date", F.col("expiry_date").cast("date"))
-        .withColumn("warehouse_id", F.col("warehouse_id").cast("string")))
+        .withColumn("warehouse_id", F.col("warehouse_id").cast("string"))
+        .withColumn("_source_system", F.lit("east_warehouse"))
+        .withColumn("_ingestion_timestamp", current_timestamp())
+        .withColumn("_file_name", F.col("_metadata.file_name"))
+        .withColumn("_file_path", F.col("_metadata.file_path"))
+        )
+
+# COMMAND ----------
+
+east_wh_inventory_transformed_df.display()
 
 # COMMAND ----------
 
