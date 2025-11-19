@@ -126,7 +126,7 @@ west_wh_inventory_transformed_df = (
     .withColumn("lot_number", F.col("lot_number").cast("string"))
     .withColumn("warehouse_code", F.col("warehouse_code").cast("string"))
     .withColumn("file_generated_at", F.col("file_generated_at").cast("string"))
-    .withColumn("_source_system", lit("west_inventory"))
+    .withColumn("_source_system", lit("west_warehouse"))
     .withColumn("_ingestion_timestamp", current_timestamp())
     .withColumn("_file_name", F.col("_metadata.file_name"))
     .withColumn("_file_path", F.col("_metadata.file_path"))
