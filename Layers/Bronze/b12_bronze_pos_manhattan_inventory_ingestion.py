@@ -105,7 +105,7 @@ pos_manhattan_inventory_raw_df = (
 
 # COMMAND ----------
 
-pos_manhattan_inventory_raw_df.display()
+pos_manhattan_inventory_raw_df.limit(10).display()
 
 # COMMAND ----------
 
@@ -160,7 +160,7 @@ main_df.display()
 
 # COMMAND ----------
 
-sub_df.display()
+sub_df.limit(10).display()
 
 # COMMAND ----------
 
@@ -238,8 +238,7 @@ query.awaitTermination()
 
 # MAGIC %sql
 # MAGIC
-# MAGIC select * from
-# MAGIC db_uci_data_team_dev_wkspc.shopfast.bronze_main_pos_manhattan_inventory limit 10
+# MAGIC SELECT COUNT(*) FROM db_uci_data_team_dev_wkspc.shopfast.bronze_sub_pos_manhattan_inventory
 
 # COMMAND ----------
 
